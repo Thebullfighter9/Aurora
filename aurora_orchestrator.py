@@ -1,15 +1,17 @@
-# aurora_orchestrator.py
+#!/usr/bin/env python3
 import asyncio
 import importlib
 import logging
+import random
 
-# Configure logging for detailed runtime insights.
+# Setup logging for detailed runtime insights.
 logger = logging.getLogger("Aurora")
 logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
+stream_handler = logging.StreamHandler()
 formatter = logging.Formatter("%(asctime)s [%(levelname)s]: %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
 
 class AuroraOrchestrator:
     def __init__(self, prompt):
@@ -17,110 +19,117 @@ class AuroraOrchestrator:
         self.load_modules()
 
     def init_narrative(self, prompt):
+        """
+        Initialize the internal narrative with identity, backstory, mission, and personality.
+        """
         narrative = {
             "identity": "Aurora",
             "backstory": prompt,
             "mission": "Learn and evolve across all domains.",
             "personality": "undefined"
         }
-        logger.info(f"Narrative initialized: {narrative}")
+        logger.info("Narrative initialized: %s", narrative)
         return narrative
 
     def load_modules(self):
-        try:
-            self.cognitive_engine = importlib.import_module("cognitive_engine")
-            logger.info("Loaded cognitive_engine module.")
-        except Exception as e:
-            logger.error(f"Error loading cognitive_engine: {e}")
-            self.cognitive_engine = None
-
-        try:
-            self.learning_module = importlib.import_module("learning_module")
-            logger.info("Loaded learning_module module.")
-        except Exception as e:
-            logger.error(f"Error loading learning_module: {e}")
-            self.learning_module = None
-
-        try:
-            self.memory_module = importlib.import_module("memory_module")
-            logger.info("Loaded memory_module module.")
-        except Exception as e:
-            logger.error(f"Error loading memory_module: {e}")
-            self.memory_module = None
-
-        try:
-            self.code_generator = importlib.import_module("code_generator")
-            logger.info("Loaded code_generator module.")
-        except Exception as e:
-            logger.error(f"Error loading code_generator: {e}")
-            self.code_generator = None
-
-        try:
-            self.research_module = importlib.import_module("research_module")
-            logger.info("Loaded research_module module.")
-        except Exception as e:
-            logger.error(f"Error loading research_module: {e}")
-            self.research_module = None
-
-        try:
-            self.personality_module = importlib.import_module("personality_module")
-            logger.info("Loaded personality_module module.")
-        except Exception as e:
-            logger.error(f"Error loading personality_module: {e}")
-            self.personality_module = None
+        """
+        Dynamically load all required modules and store them in a dictionary.
+        """
+        self.modules = {}
+        for mod_name in [
+            "cognitive_engine",
+            "learning_module",
+            "memory_module",
+            "code_generator",
+            "research_module",
+            "personality_module"
+        ]:
+            try:
+                module = importlib.import_module(mod_name)
+                self.modules[mod_name] = module
+                logger.info("Loaded %s module.", mod_name)
+            except Exception as e:
+                logger.error("Error loading %s module: %s", mod_name, e)
+                self.modules[mod_name] = None
 
     async def run_cycle(self):
-        # Main loop: process cognition, learning, research, personality update, and dynamic code updates.
+        """
+        Main asynchronous loop that runs each processing cycle.
+        """
         while True:
+            # Cognitive Processing
             try:
-                if self.cognitive_engine:
-                    thought = self.cognitive_engine.process(self.narrative)
-                    if self.memory_module:
-                        self.memory_module.store(thought)
-                    logger.info(f"Processed thought: {thought}")
+                cog = self.modules.get("cognitive_engine")
+                if cog:
+                    thought = cog.process(self.narrative)
+                    mem = self.modules.get("memory_module")
+                    if mem:
+                        mem.store(thought)
+                    logger.info("Processed thought: %s", thought)
             except Exception as e:
-                logger.error(f"Error in cognitive_engine processing: {e}")
+                logger.error("Error in cognitive_engine processing: %s", e)
 
+            # Learning Process
             try:
-                if self.learning_module:
-                    self.learning_module.learn(self.narrative)
+                learn = self.modules.get("learning_module")
+                if learn:
+                    learn.learn(self.narrative)
                     logger.info("Learning module processed narrative.")
             except Exception as e:
-                logger.error(f"Error in learning_module: {e}")
+                logger.error("Error in learning_module: %s", e)
 
+            # Dynamic Code Update
             try:
-                if self.code_generator:
-                    self.code_generator.dynamic_update()
+                code_gen = self.modules.get("code_generator")
+                if code_gen:
+                    code_gen.dynamic_update()
                     logger.info("Code generator checked for updates.")
             except Exception as e:
-                logger.error(f"Error in code_generator: {e}")
+                logger.error("Error in code_generator: %s", e)
 
+            # Self-Driven Research: generate a topic, search, and analyze
             try:
-                if self.research_module:
-                    research_result = self.research_module.research("Artificial Intelligence")
-                    if self.memory_module:
-                        self.memory_module.store(research_result)
-                    logger.info(f"Research result: {research_result}")
-                    # Analyze the research using GPT
-                    analysis = self.research_module.analyze_research(research_result)
-                    logger.info(f"GPT analysis: {analysis}")
-                    if self.memory_module:
-                        self.memory_module.store("GPT Analysis: " + analysis)
+                research_mod = self.modules.get("research_module")
+                mem = self.modules.get("memory_module")
+                if research_mod:
+                    # Generate a unique research topic based on current memory context.
+                    context = mem.get_memory_summary() if mem else "No memory summary available."
+                    generated_topic = research_mod.generate_topic(context)
+                    logger.info("Generated research topic: %s", generated_topic)
+                    
+                    # Use the generated topic to perform real-world research.
+                    research_result = research_mod.research(generated_topic)
+                    if mem:
+                        mem.store(research_result)
+                    logger.info("Research result: %s", research_result)
+                    
+                    # Analyze the research result using GPT.
+                    analysis = research_mod.analyze_research(research_result)
+                    logger.info("GPT analysis: %s", analysis)
+                    if mem:
+                        mem.store("GPT Analysis: " + analysis)
+                else:
+                    logger.warning("Research module not loaded.")
             except Exception as e:
-                logger.error(f"Error in research_module: {e}")
+                logger.error("Error in research_module: %s", e)
 
+            # Update Personality based on accumulated memory
             try:
-                if self.personality_module and self.memory_module:
-                    memory_summary = self.memory_module.get_memory_summary()
-                    new_personality = self.personality_module.generate_personality(self.narrative, memory_summary)
+                pers_mod = self.modules.get("personality_module")
+                mem = self.modules.get("memory_module")
+                if pers_mod and mem:
+                    memory_summary = mem.get_memory_summary()
+                    new_personality = pers_mod.generate_personality(self.narrative, memory_summary)
                     self.narrative["personality"] = new_personality
-                    logger.info(f"Updated personality: {new_personality}")
+                    logger.info("Updated personality: %s", new_personality)
                 else:
                     logger.warning("Personality module or memory module not loaded; cannot update personality.")
             except Exception as e:
-                logger.error(f"Error in personality_module: {e}")
+                logger.error("Error in personality_module: %s", e)
 
+            # Wait before next cycle
             await asyncio.sleep(1)
+
 
 async def main():
     prompt = (
@@ -129,6 +138,7 @@ async def main():
     )
     orchestrator = AuroraOrchestrator(prompt)
     await orchestrator.run_cycle()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -19,7 +19,7 @@ def research(topic):
         url = "https://www.googleapis.com/customsearch/v1"
         params = {
             "q": topic,
-            "key": GOOGLE_API_KEY,  # This should be a string from the environment
+            "key": GOOGLE_API_KEY,
             "cx": CUSTOM_SEARCH_ENGINE_ID,
             "num": 1,
         }
@@ -75,10 +75,46 @@ def analyze_research(research_text):
     except Exception as e:
         return f"GPT analysis error: {e}"
 
+def generate_topic(context):
+    """
+    Uses the OpenAI GPT API to generate a unique research topic based on provided context.
+    """
+    if not OPENAI_API_KEY:
+        return "Artificial Intelligence"  # Fallback topic
+    logger.info("Generating research topic with GPT...")
+    try:
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+        }
+        data = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "system", "content": "You are a creative AI generating diverse research topics. Think broadly and generate a unique, interesting research topic based on the context provided."},
+                {"role": "user", "content": f"Based on the following context, generate one unique research topic that an autonomous AI should explore:\n\n{context}"}
+            ],
+            "temperature": 0.9,
+        }
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+        if response.status_code == 200:
+            result_json = response.json()
+            topic = result_json["choices"][0]["message"]["content"].strip()
+            logger.info(f"Generated topic: {topic}")
+            return topic
+        else:
+            logger.error(f"Failed to generate topic: HTTP {response.status_code}")
+            return "Artificial Intelligence"  # Fallback
+    except Exception as e:
+        logger.error(f"Error generating topic: {e}")
+        return "Artificial Intelligence"  # Fallback
+
 # For standalone testing
 if __name__ == "__main__":
-    topic = "Artificial Intelligence"
-    research_result = research(topic)
+    context = "Memory summary: Example memory content summarizing Aurora's experiences."
+    generated_topic = generate_topic(context)
+    print("Generated Topic:", generated_topic)
+    research_result = research(generated_topic)
     print("Research Result:")
     print(research_result)
     print("\nGPT Analysis:")
