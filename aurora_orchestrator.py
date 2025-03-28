@@ -101,6 +101,11 @@ class AuroraOrchestrator:
                     if self.memory_module:
                         self.memory_module.store(research_result)
                     logger.info(f"Research result: {research_result}")
+                    # Analyze the research using GPT
+                    analysis = self.research_module.analyze_research(research_result)
+                    logger.info(f"GPT analysis: {analysis}")
+                    if self.memory_module:
+                        self.memory_module.store("GPT Analysis: " + analysis)
             except Exception as e:
                 logger.error(f"Error in research_module: {e}")
 
@@ -110,6 +115,8 @@ class AuroraOrchestrator:
                     new_personality = self.personality_module.generate_personality(self.narrative, memory_summary)
                     self.narrative["personality"] = new_personality
                     logger.info(f"Updated personality: {new_personality}")
+                else:
+                    logger.warning("Personality module or memory module not loaded; cannot update personality.")
             except Exception as e:
                 logger.error(f"Error in personality_module: {e}")
 
