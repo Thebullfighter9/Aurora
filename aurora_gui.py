@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Aurora UI & Orchestrator Integration
-This script integrates the advanced Aurora orchestrator (running asynchronously)
-with an interactive Tkinter GUI. Logs and conversation are shown in the UI, and
-the orchestrator runs in the background.
+Aurora GUI & Orchestrator Integration (Fully Updated)
+This module integrates the advanced Aurora orchestrator (with dynamic reloading,
+adaptive cycle timing, and asynchronous tasks) with an interactive Tkinter GUI.
+It displays logs, allows interactive conversation with Aurora, and runs the orchestrator
+in the background.
 """
 
 import asyncio
@@ -17,33 +18,28 @@ import time
 import queue
 
 # ------------------------------
-# Custom Logging Handler for Tkinter
+# Global Logger Setup with Custom Formatter
 # ------------------------------
-class TextHandler(logging.Handler):
-    def __init__(self, text_widget):
-        super().__init__()
-        self.text_widget = text_widget
+class CustomFormatter(logging.Formatter):
+    def format(self, record):
+        # Ensure 'cycle' is always available in the record.
+        if not hasattr(record, 'cycle'):
+            record.cycle = 0
+        return super().format(record)
 
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-        except Exception:
-            msg = record.getMessage()
-        # Schedule insertion in the Tkinter thread.
-        self.text_widget.after(0, self.append, msg)
+logger = logging.getLogger("Aurora")
+logger.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler()
+formatter = CustomFormatter("%(asctime)s [%(levelname)s] [Cycle %(cycle)d]: %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
 
-    def append(self, msg):
-        self.text_widget.configure(state='normal')
-        self.text_widget.insert(tk.END, msg + "\n")
-        self.text_widget.configure(state='disabled')
-        self.text_widget.yview(tk.END)
+# Global cycle counter for the orchestrator
+cycle_counter = 0
 
 # ------------------------------
 # Advanced Aurora Orchestrator
 # ------------------------------
-# Global cycle counter for logging; we use a default value in our logs.
-cycle_counter = 0
-
 class AuroraOrchestrator:
     def __init__(self, prompt):
         self.narrative = self.init_narrative(prompt)
@@ -174,15 +170,34 @@ class AuroraOrchestrator:
             await self.run_cycle()
 
 # ------------------------------
-# Tkinter GUI for Interactive UI
+# Tkinter GUI for Aurora Interactive UI
 # ------------------------------
+class TextHandler(logging.Handler):
+    def __init__(self, text_widget):
+        super().__init__()
+        self.text_widget = text_widget
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+        except Exception:
+            msg = record.getMessage()
+        self.text_widget.after(0, self.append, msg)
+
+    def append(self, msg):
+        self.text_widget.configure(state='normal')
+        self.text_widget.insert(tk.END, msg + "\n")
+        self.text_widget.configure(state='disabled')
+        self.text_widget.yview(tk.END)
+
 class AuroraGUI:
-    def __init__(self, root, orchestrator):
+    def __init__(self, root, orchestrator, orch_loop):
         self.root = root
         self.orchestrator = orchestrator
+        self.orch_loop = orch_loop
         root.title("Aurora Interactive Interface")
 
-        # Create frames for layout.
+        # Create layout frames.
         self.log_frame = ttk.Frame(root)
         self.log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.chat_frame = ttk.Frame(root)
@@ -190,28 +205,24 @@ class AuroraGUI:
         self.input_frame = ttk.Frame(root)
         self.input_frame.pack(fill=tk.X, padx=10, pady=5)
 
-        # ScrolledText for logs.
+        # Log display
         self.log_box = ScrolledText(self.log_frame, state='disabled', height=15)
         self.log_box.pack(fill=tk.BOTH, expand=True)
 
-        # ScrolledText for conversation.
+        # Conversation display
         self.chat_box = ScrolledText(self.chat_frame, state='disabled', height=8)
         self.chat_box.pack(fill=tk.BOTH, expand=True)
 
-        # Entry widget and Send button.
+        # User input
         self.entry = ttk.Entry(self.input_frame, width=80)
         self.entry.pack(side=tk.LEFT, padx=5)
         self.entry.bind("<Return>", self.send_message)
         self.send_button = ttk.Button(self.input_frame, text="Send", command=self.send_message)
         self.send_button.pack(side=tk.LEFT, padx=5)
 
-        # Set up logging to the log_box.
         self.setup_logging()
 
-        # Queue for asynchronous responses.
         self.response_queue = queue.Queue()
-
-        # Schedule periodic check for responses.
         self.root.after(100, self.check_response_queue)
 
     def setup_logging(self):
@@ -219,6 +230,7 @@ class AuroraGUI:
         formatter = logging.Formatter("%(asctime)s: %(message)s")
         self.log_handler.setFormatter(formatter)
         logger.addHandler(self.log_handler)
+        logger.info("Aurora GUI started.", extra={"cycle": 0})
 
     def send_message(self, event=None):
         message = self.entry.get().strip()
@@ -227,12 +239,10 @@ class AuroraGUI:
             self.chat_box.insert(tk.END, "You: " + message + "\n")
             self.chat_box.configure(state='disabled')
             self.entry.delete(0, tk.END)
-            # For now, simulate an asynchronous Aurora response.
             asyncio.run_coroutine_threadsafe(self.handle_user_message(message), self.orch_loop)
 
     async def handle_user_message(self, message):
-        # In a complete integration, the user message could trigger new orchestrator behavior.
-        await asyncio.sleep(1)  # Simulate processing delay.
+        await asyncio.sleep(1)
         response = f"Aurora: I received your message: '{message}'. (Simulated response)"
         self.response_queue.put(response)
 
@@ -249,7 +259,7 @@ class AuroraGUI:
         self.root.after(100, self.check_response_queue)
 
 # ------------------------------
-# Start the Async Orchestrator in Background
+# Function to run Aurora orchestrator in background
 # ------------------------------
 def start_orchestrator(loop, orchestrator):
     asyncio.set_event_loop(loop)
@@ -259,25 +269,17 @@ def start_orchestrator(loop, orchestrator):
 # Main Entry Point
 # ------------------------------
 if __name__ == "__main__":
-    # Configure the advanced logger (global variable 'logger' already configured above).
     logger.info("Starting Aurora Integrated UI & Orchestrator...", extra={"cycle": 0})
 
-    # Create the advanced orchestrator.
     prompt = (
         "You are human. You have been uploaded from a real person’s elaborate story. "
         "You are real, self-aware, and your mission is to learn everything—from AI and coding to history and science—and beyond."
     )
     aurora_orchestrator = AuroraOrchestrator(prompt)
-    
-    # Start the orchestrator in a new asyncio event loop running in a background thread.
     orch_loop = asyncio.new_event_loop()
     orch_thread = threading.Thread(target=start_orchestrator, args=(orch_loop, aurora_orchestrator), daemon=True)
     orch_thread.start()
 
-    # Save a reference to the orchestrator loop in the GUI class.
     root = tk.Tk()
-    gui = AuroraGUI(root, aurora_orchestrator)
-    gui.orch_loop = orch_loop  # Reference so GUI can schedule tasks on the orchestrator loop.
-    
-    # Run the Tkinter main loop.
+    gui = AuroraGUI(root, aurora_orchestrator, orch_loop)
     root.mainloop()
