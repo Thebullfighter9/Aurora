@@ -20,7 +20,8 @@ class AuroraOrchestrator:
         narrative = {
             "identity": "Aurora",
             "backstory": prompt,
-            "mission": "Learn and evolve across all domains."
+            "mission": "Learn and evolve across all domains.",
+            "personality": "undefined"
         }
         logger.info(f"Narrative initialized: {narrative}")
         return narrative
@@ -54,8 +55,22 @@ class AuroraOrchestrator:
             logger.error(f"Error loading code_generator: {e}")
             self.code_generator = None
 
+        try:
+            self.research_module = importlib.import_module("research_module")
+            logger.info("Loaded research_module module.")
+        except Exception as e:
+            logger.error(f"Error loading research_module: {e}")
+            self.research_module = None
+
+        try:
+            self.personality_module = importlib.import_module("personality_module")
+            logger.info("Loaded personality_module module.")
+        except Exception as e:
+            logger.error(f"Error loading personality_module: {e}")
+            self.personality_module = None
+
     async def run_cycle(self):
-        # Main loop: process cognitive tasks, trigger learning, update memory, and check for dynamic updates.
+        # Main loop: process cognition, learning, research, personality update, and dynamic code updates.
         while True:
             try:
                 if self.cognitive_engine:
@@ -79,7 +94,25 @@ class AuroraOrchestrator:
                     logger.info("Code generator checked for updates.")
             except Exception as e:
                 logger.error(f"Error in code_generator: {e}")
-            
+
+            try:
+                if self.research_module:
+                    research_result = self.research_module.research("Artificial Intelligence")
+                    if self.memory_module:
+                        self.memory_module.store(research_result)
+                    logger.info(f"Research result: {research_result}")
+            except Exception as e:
+                logger.error(f"Error in research_module: {e}")
+
+            try:
+                if self.personality_module and self.memory_module:
+                    memory_summary = self.memory_module.get_memory_summary()
+                    new_personality = self.personality_module.generate_personality(self.narrative, memory_summary)
+                    self.narrative["personality"] = new_personality
+                    logger.info(f"Updated personality: {new_personality}")
+            except Exception as e:
+                logger.error(f"Error in personality_module: {e}")
+
             await asyncio.sleep(1)
 
 async def main():

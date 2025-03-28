@@ -3,8 +3,7 @@ import os
 import importlib
 
 def dynamic_update():
-    # Placeholder condition to simulate code updates.
-    update_needed = True  
+    update_needed = True  # Placeholder condition
     if update_needed:
         new_module_code = '''
 def new_capability():
