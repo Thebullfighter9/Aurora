@@ -2,7 +2,8 @@
 """
 aurora_interactive.py
 An interactive command-line interface for Aurora.
-This script initializes required modules and then enters an interactive loop to process user queries.
+This script initializes required modules and then enters an interactive loop
+to process user commands and queries.
 """
 
 import sys
@@ -19,9 +20,42 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [%(levelname)s]: %(message)s')
 logger = logging.getLogger()
 
+def print_help():
+    help_text = """
+Available commands:
+  help     - Show this help message.
+  status   - Show system status.
+  exit     - Exit the interactive session.
+  
+Any other input will be forwarded to the cognitive engine for processing.
+"""
+    print(help_text)
+
+def show_status():
+    # This is a placeholder. You can add more detailed status information.
+    print("System Status:")
+    print("  Cognitive Engine loaded:", hasattr(cognitive_engine, "process_query"))
+    print("  Learning Module loaded:", hasattr(learning_module, "__name__"))
+    print("  Memory Module loaded:", hasattr(memory_module, "__name__"))
+    print("  Code Generator loaded:", hasattr(code_generator, "__name__"))
+    print("  Research Module loaded:", hasattr(research_module, "__name__"))
+    print("  Personality Module loaded:", hasattr(personality_module, "__name__"))
+    print("  Current personality: Aurora feels very curious today.")
+    
+def process_query(query):
+    # Forward the query to the cognitive_engine if a function exists,
+    # otherwise just echo the input.
+    if hasattr(cognitive_engine, 'process_query'):
+        try:
+            return cognitive_engine.process_query(query)
+        except Exception as e:
+            return f"Error processing query: {e}"
+    else:
+        return f"Echo: {query}"
+
 def interactive_loop():
     logger.info("Starting interactive session...")
-
+    
     # Optional initialization for cognitive_engine (if available)
     if hasattr(cognitive_engine, 'initialize'):
         try:
@@ -32,30 +66,36 @@ def interactive_loop():
     else:
         logger.info("No initialization required for cognitive engine.")
 
-    logger.info("Enter your query (type 'exit' or 'quit' to end):")
+    print("Enter your command or query (type 'help' for options):")
+    
     while True:
         try:
-            user_input = input("Aurora> ")
-            if user_input.strip().lower() in ['exit', 'quit']:
+            user_input = input("Aurora> ").strip()
+            if not user_input:
+                continue
+
+            if user_input.lower() in ['exit', 'quit']:
                 logger.info("Exiting interactive session.")
                 break
 
-            # Process the query via cognitive_engine if the function exists.
-            if hasattr(cognitive_engine, 'process_query'):
-                try:
-                    response = cognitive_engine.process_query(user_input)
-                except Exception as e:
-                    response = f"Error processing query: {e}"
-            else:
-                # Fallback behavior: simply echo the input.
-                response = f"Echo: {user_input}"
+            # Built-in commands
+            if user_input.lower() == "help":
+                print_help()
+                continue
+            elif user_input.lower() == "status":
+                show_status()
+                continue
 
+            # Otherwise, process as a query:
+            response = process_query(user_input)
             print(response)
+            
         except KeyboardInterrupt:
             logger.info("KeyboardInterrupt received. Exiting interactive session.")
             break
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
+            break
 
 if __name__ == "__main__":
     logger.info("Aurora Interactive Session Starting...")
