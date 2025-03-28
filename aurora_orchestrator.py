@@ -5,11 +5,18 @@ import random
 import time
 import os
 
+# Custom formatter to ensure 'cycle' is always available.
+class CustomFormatter(logging.Formatter):
+    def format(self, record):
+        if not hasattr(record, 'cycle'):
+            record.cycle = 0
+        return super().format(record)
+
 # Set up advanced logging with cycle metrics.
 logger = logging.getLogger("Aurora")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] [Cycle %(cycle)d]: %(message)s")
+formatter = CustomFormatter("%(asctime)s [%(levelname)s] [Cycle %(cycle)d]: %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -21,7 +28,6 @@ class AuroraOrchestrator:
         self.narrative = self.init_narrative(prompt)
         self.modules = {}
         self.load_modules()
-        # Adaptive cycle wait time (seconds)
         self.cycle_wait = 1.0
 
     def init_narrative(self, prompt):
@@ -30,15 +36,12 @@ class AuroraOrchestrator:
             "backstory": prompt,
             "mission": "Learn and evolve across all domains.",
             "personality": "undefined",
-            "metrics": {}  # reserved for diagnostic info
+            "metrics": {}
         }
         logger.info("Narrative initialized: %s", narrative, extra={"cycle": 0})
         return narrative
 
     def load_modules(self):
-        """
-        Dynamically load (or reload) required modules.
-        """
         module_names = [
             "cognitive_engine",
             "learning_module",
@@ -47,10 +50,10 @@ class AuroraOrchestrator:
             "research_module",
             "personality_module"
         ]
+        global cycle_counter
         for mod_name in module_names:
             try:
                 if mod_name in self.modules:
-                    # Reload module if already loaded.
                     module = importlib.reload(self.modules[mod_name])
                     logger.info("Reloaded module: %s", mod_name, extra={"cycle": cycle_counter})
                 else:
@@ -96,17 +99,13 @@ class AuroraOrchestrator:
             research_mod = self.modules.get("research_module")
             mem = self.modules.get("memory_module")
             if research_mod:
-                # Instead of a fixed list, Aurora uses its current memory summary as context.
                 context = mem.get_memory_summary() if mem else "No memory summary available."
-                # Generate a concise research topic autonomously.
                 generated_topic = research_mod.generate_topic(context)
                 logger.info("Generated research topic: %s", generated_topic, extra={"cycle": cycle_counter})
-                # Perform the search with the generated topic.
                 research_result = research_mod.research(generated_topic)
                 if mem:
                     mem.store(research_result)
                 logger.info("Research result: %s", research_result, extra={"cycle": cycle_counter})
-                # Analyze the research result briefly.
                 analysis = research_mod.analyze_research(research_result)
                 logger.info("GPT analysis: %s", analysis, extra={"cycle": cycle_counter})
                 if mem:
@@ -126,22 +125,14 @@ class AuroraOrchestrator:
                 self.narrative["personality"] = new_personality
                 logger.info("Updated personality: %s", new_personality, extra={"cycle": cycle_counter})
             else:
-                logger.warning("Personality or memory module not loaded; skipping personality update.", extra={"cycle": cycle_counter})
+                logger.warning("Personality module or memory module not loaded; skipping personality update.", extra={"cycle": cycle_counter})
         except Exception as e:
             logger.error("Error in personality_module: %s", e, extra={"cycle": cycle_counter})
 
     async def run_cycle(self):
-        """
-        Runs one complete cycle of Aurora's cognitive processes, including dynamic module reload,
-        parallel tasks, and adaptive timing.
-        """
         global cycle_counter
         start_time = time.time()
-
-        # Reload modules each cycle to simulate a brain that can rewire itself.
         self.load_modules()
-
-        # Create concurrent tasks.
         tasks = [
             self.process_cognition(),
             self.process_learning(),
@@ -150,24 +141,16 @@ class AuroraOrchestrator:
             self.process_personality()
         ]
         await asyncio.gather(*tasks)
-
-        # Measure cycle duration.
         cycle_duration = time.time() - start_time
         cycle_counter += 1
-        # Log cycle metrics in the narrative for introspection.
         self.narrative["metrics"]["last_cycle_duration"] = cycle_duration
         logger.info("Cycle %d completed in %.3f seconds.", cycle_counter, cycle_duration, extra={"cycle": cycle_counter})
-        # Adaptive wait: if cycle took longer, wait less time to keep momentum.
         wait_time = max(0.5, self.cycle_wait - cycle_duration * 0.1)
         await asyncio.sleep(wait_time)
 
     async def run(self):
-        """
-        Main loop: continuously run cycles.
-        """
         while True:
             await self.run_cycle()
-
 
 async def main():
     prompt = (
