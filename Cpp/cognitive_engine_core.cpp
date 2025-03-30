@@ -1,64 +1,99 @@
 #include "cognitive_engine_core.hpp"
+#include <iostream>
 #include <sstream>
-#include <algorithm>
-#include <numeric>
+#include <regex>
 #include <thread>
 #include <future>
 #include <chrono>
-#include <random>
+#include <ctime>
 
-// Constructor: Initialize a massive internal state with random values.
-CognitiveEngineCore::CognitiveEngineCore() {
-    // Create an internal state with 1,000,000 elements.
-    internalState.resize(1000000, 0.0);
-    std::default_random_engine generator(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()));
-    std::uniform_real_distribution<double> distribution(0.0, 1.0);
-    for (auto& value : internalState) {
-        value = distribution(generator);
-    }
+CognitiveEngineCore::CognitiveEngineCore()
+    : loaded(false), introspectionLevel(1)
+{
+    // Constructor: Initialization can be performed later via load()
 }
 
-// Destructor
-CognitiveEngineCore::~CognitiveEngineCore() {}
-
-// Simulate processing of a single knowledge fragment.
-std::string CognitiveEngineCore::processFragment(const std::string& fragment) {
-    std::ostringstream oss;
-    // Here we simulate complex analysis.
-    oss << "[Advanced Analysis] " << fragment << " (processed)";
-    // Simulate a time-consuming computation.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    return oss.str();
+CognitiveEngineCore::~CognitiveEngineCore() {
+    // Destructor (if any cleanup is needed)
 }
 
-// Process multiple knowledge fragments concurrently.
-std::string CognitiveEngineCore::processData(const std::vector<std::string>& knowledgeFragments) {
-    std::vector<std::future<std::string>> futures;
-    for (const auto& fragment : knowledgeFragments) {
-        // Launch each fragment processing asynchronously.
-        futures.push_back(std::async(std::launch::async, &CognitiveEngineCore::processFragment, this, fragment));
-    }
-
-    std::ostringstream combined;
-    combined << "C++ Advanced Cognitive Core processed: ";
-    for (auto& fut : futures) {
-        combined << fut.get() << " ";
-    }
-
-    // Update internal state based on this processing cycle.
-    updateInternalState("CycleCompleted");
-
-    return combined.str();
+void CognitiveEngineCore::load() {
+    std::lock_guard<std::mutex> lock(mtx);
+    loaded = true;
+    lastQueryTime = std::chrono::system_clock::now();
+    sessionLog.push_back("Cognitive Engine Core initialized.");
+    // Log initialization with a timestamp.
+    std::time_t now = std::chrono::system_clock::to_time_t(lastQueryTime);
+    std::cout << std::ctime(&now) << " Cognitive Engine Core loaded successfully." << std::endl;
 }
 
-// Thread-safe update of the internal state.
-void CognitiveEngineCore::updateInternalState(const std::string& feedback) {
-    std::lock_guard<std::mutex> lock(stateMutex);
-    // For demonstration, add a tiny random perturbation to each element.
-    std::default_random_engine generator(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()));
-    std::uniform_real_distribution<double> distribution(-0.001, 0.001);
-    for (auto& value : internalState) {
-        value += distribution(generator);
+std::string CognitiveEngineCore::processQuery(const std::string &query) {
+    std::lock_guard<std::mutex> lock(mtx);
+    lastQueryTime = std::chrono::system_clock::now();
+    sessionLog.push_back("Processed query: " + query);
+
+    // Basic sentiment analysis (using regex).
+    std::string sentiment = "neutral";
+    std::regex positive("\\b(happy|joy|excellent|good)\\b", std::regex_constants::icase);
+    std::regex negative("\\b(sad|bad|terrible|angry)\\b", std::regex_constants::icase);
+    if (std::regex_search(query, positive)) {
+        sentiment = "positive";
+    } else if (std::regex_search(query, negative)) {
+        sentiment = "negative";
     }
-    // (Optional) Incorporate feedback to adjust state; here, it's just logged or could influence future computations.
+
+    // Build the response message.
+    std::ostringstream response;
+    response << "Query: '" << query << "' processed. Detected sentiment: " << sentiment << ". ";
+    
+    // Trigger deeper processing if custom keywords are detected.
+    if (query.find("synergy") != std::string::npos ||
+        query.find("conscious") != std::string::npos ||
+        query.find("adaptive") != std::string::npos ||
+        query.find("self-aware") != std::string::npos)
+    {
+        response << "Deep cognitive processing triggered.";
+    } else {
+        response << "Standard processing applied.";
+    }
+
+    // Log the response.
+    std::cout << response.str() << std::endl;
+    return response.str();
+}
+
+std::future<std::string> CognitiveEngineCore::processQueryAsync(const std::string &query) {
+    // Launch asynchronous processing.
+    return std::async(std::launch::async, &CognitiveEngineCore::processQuery, this, query);
+}
+
+std::string CognitiveEngineCore::introspect() const {
+    std::lock_guard<std::mutex> lock(mtx);
+    std::ostringstream report;
+    report << "System Introspection Report: ";
+    if (lastQueryTime.time_since_epoch().count() != 0) {
+        std::time_t lastTime = std::chrono::system_clock::to_time_t(lastQueryTime);
+        report << "Last query processed at " << std::ctime(&lastTime);
+    } else {
+        report << "No queries processed yet. ";
+    }
+    report << "Introspection level: " << introspectionLevel << ".";
+    std::cout << report.str() << std::endl;
+    return report.str();
+}
+
+void CognitiveEngineCore::reload() {
+    {
+        std::lock_guard<std::mutex> lock(mtx);
+        std::cout << "Reloading Cognitive Engine Core modules..." << std::endl;
+        loaded = false;
+    }
+    // Simulate reload delay.
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    load();
+}
+
+bool CognitiveEngineCore::status() const {
+    std::lock_guard<std::mutex> lock(mtx);
+    return loaded;
 }

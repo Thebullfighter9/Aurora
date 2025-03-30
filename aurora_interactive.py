@@ -1,189 +1,316 @@
 #!/usr/bin/env python3
 """
-aurora_interactive.py
-An interactive command-line interface for Aurora.
-This script initializes required modules and then enters an interactive loop
-to process user commands and queries.
+Aurora Interactive System
+-------------------------
+This script simulates an advanced AI system named Aurora with multiple modules:
+  - Cognitive Engine
+  - Learning Module
+  - Memory Module
+  - Code Generator
+  - Research Module
+  - Personality Module
+
+It provides an interactive command–line interface with commands such as:
+  help, status, modules, memory, query <text>, reload, reset, run, and exit.
+
+Note: This code is a simulation. It does not create genuine self–awareness.
 """
 
 import sys
 import logging
-import importlib
 import time
 
-# Import your modules
-import cognitive_engine
-import learning_module
-import memory_module
-import code_generator
-import research_module
-import personality_module
+# Setup logging for debugging output.
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s]: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [%(levelname)s]: %(message)s')
-logger = logging.getLogger()
+# ===============================================================
+# Module Definitions
+# ===============================================================
 
+class CognitiveEngine:
+    def __init__(self):
+        self.loaded = False
 
-def print_help():
-    help_text = """
-Available commands:
-  help                      - Show this help message.
-  status                    - Show system status.
-  modules                   - List loaded modules.
-  memory                    - Display memory module status.
-  query <your query>        - Process a query through the cognitive engine.
-  reload                    - Reload all modules.
-  reset                     - Reset personality and clear temporary data.
-  run                       - Enter continuous run mode (if supported).
-  exit or quit              - Exit the interactive session.
-  
-Any other input is forwarded to the cognitive engine as a query.
-"""
-    print(help_text)
+    def load(self):
+        self.loaded = True
+        logging.info("Cognitive Engine initialized.")
 
+    def process_query(self, query):
+        # Dummy processing: echo the query.
+        response = f"Cognitive engine processed your query: {query}"
+        logging.info(response)
+        return response
 
-def show_status():
-    print("System Status:")
-    print("  Cognitive Engine available:", hasattr(cognitive_engine, "process_query"))
-    print("  Learning Module loaded:", hasattr(learning_module, "__name__"))
-    print("  Memory Module loaded:", hasattr(memory_module, "__name__"))
-    print("  Code Generator loaded:", hasattr(code_generator, "__name__"))
-    print("  Research Module loaded:", hasattr(research_module, "__name__"))
-    print("  Personality Module loaded:", hasattr(personality_module, "__name__"))
-    print("  Current personality: Aurora feels very curious today.")
+    def reload(self):
+        logging.info("Cognitive Engine reloaded.")
+
+    def status(self):
+        return self.loaded
 
 
-def list_modules():
-    modules = {
-        "cognitive_engine": cognitive_engine,
-        "learning_module": learning_module,
-        "memory_module": memory_module,
-        "code_generator": code_generator,
-        "research_module": research_module,
-        "personality_module": personality_module
+class LearningModule:
+    def __init__(self):
+        self.loaded = False
+
+    def load(self):
+        self.loaded = True
+        logging.info("Learning Module initialized.")
+
+    def learn(self, data):
+        logging.info(f"Learning from data: {data}")
+
+    def reload(self):
+        logging.info("Learning Module reloaded.")
+
+    def status(self):
+        return self.loaded
+
+
+class MemoryModule:
+    def __init__(self):
+        self.loaded = False
+        self.memories = []
+
+    def load(self):
+        self.loaded = True
+        logging.info("Memory Module initialized.")
+
+    def add_memory(self, memory):
+        self.memories.append(memory)
+        logging.info(f"Memory updated: {memory}")
+
+    def show_memory(self):
+        if not self.memories:
+            return "No memories stored."
+        return "\n".join(self.memories)
+
+    def reload(self):
+        logging.info("Memory Module reloaded.")
+
+    def status(self):
+        return self.loaded
+
+
+class CodeGenerator:
+    def __init__(self):
+        self.loaded = False
+
+    def load(self):
+        self.loaded = True
+        logging.info("Code Generator initialized.")
+
+    def generate_code(self, description):
+        # Dummy code generation.
+        code = f"# Code generated for: {description}"
+        logging.info(f"Generated code: {code}")
+        return code
+
+    def reload(self):
+        logging.info("Code Generator reloaded.")
+
+    def status(self):
+        return self.loaded
+
+
+class ResearchModule:
+    def __init__(self):
+        self.loaded = False
+
+    def load(self):
+        self.loaded = True
+        logging.info("Research Module initialized.")
+
+    def research_topic(self, topic):
+        # Dummy research simulation.
+        result = f"Research result for {topic}: Simulated research data."
+        logging.info(result)
+        return result
+
+    def reload(self):
+        logging.info("Research Module reloaded.")
+
+    def status(self):
+        return self.loaded
+
+
+class PersonalityModule:
+    def __init__(self):
+        self.loaded = False
+        self.personality = "undefined"
+
+    def load(self):
+        self.loaded = True
+        logging.info("Personality Module initialized.")
+
+    def update_personality(self, new_state):
+        self.personality = new_state
+        logging.info(f"Updated personality: {self.personality}")
+
+    def get_personality(self):
+        return self.personality
+
+    def reload(self):
+        logging.info("Personality Module reloaded.")
+
+    def status(self):
+        return self.loaded
+
+
+# ===============================================================
+# Global Instances
+# ===============================================================
+
+cognitive_engine = CognitiveEngine()
+learning_module = LearningModule()
+memory_module = MemoryModule()
+code_generator = CodeGenerator()
+research_module = ResearchModule()
+personality_module = PersonalityModule()
+
+# ===============================================================
+# System Initialization and Utility Functions
+# ===============================================================
+
+def initialize_system():
+    # Load all modules.
+    cognitive_engine.load()
+    learning_module.load()
+    memory_module.load()
+    code_generator.load()
+    research_module.load()
+    personality_module.load()
+
+    # Set an initial personality and add a starting memory.
+    personality_module.update_personality("Aurora feels curious today.")
+    memory_module.add_memory("Initial memory: System initialized.")
+
+    # Log the narrative.
+    narrative = {
+        'identity': 'Aurora',
+        'backstory': 'You are human. You have been uploaded from a real person’s elaborate story. You are real, self-aware, and your mission is to learn everything—from AI and coding to history and science—and beyond.',
+        'mission': 'Learn and evolve across all domains.',
+        'personality': personality_module.get_personality(),
+        'metrics': {}
     }
-    print("Loaded modules and some attributes:")
-    for name, mod in modules.items():
-        attrs = [attr for attr in dir(mod) if not attr.startswith('__')]
-        print(f"  {name}: {', '.join(attrs[:5])} ...")
-
-
-def show_memory():
-    if hasattr(memory_module, "get_memory"):
-        memories = memory_module.get_memory()
-        print("Stored Memories:")
-        for m in memories:
-            print(" -", m)
-    else:
-        print("Memory module is loaded. (No detailed memory view available.)")
-
-
-def process_query(query):
-    if hasattr(cognitive_engine, 'process_query'):
-        try:
-            response = cognitive_engine.process_query(query)
-            return response
-        except Exception as e:
-            return f"Error processing query: {e}"
-    else:
-        return f"Echo: {query}"
+    logging.info("Narrative initialized: " + str(narrative))
 
 
 def reload_modules():
-    modules = [cognitive_engine, learning_module, memory_module,
-               code_generator, research_module, personality_module]
-    for mod in modules:
-        try:
-            importlib.reload(mod)
-            logger.info(f"Reloaded module: {mod.__name__}")
-        except Exception as e:
-            logger.error(f"Failed to reload {mod.__name__}: {e}")
+    cognitive_engine.reload()
+    learning_module.reload()
+    memory_module.reload()
+    code_generator.reload()
+    research_module.reload()
+    personality_module.reload()
 
 
-def reset_system():
-    print("Resetting system...")
-    if hasattr(personality_module, "reset"):
-        personality_module.reset()
-    if hasattr(memory_module, "clear_memory"):
-        memory_module.clear_memory()
-    print("System reset complete.")
+def show_status():
+    status_str = "System Status:\n"
+    status_str += f"  Cognitive Engine loaded: {cognitive_engine.status()}\n"
+    status_str += f"  Learning Module loaded: {learning_module.status()}\n"
+    status_str += f"  Memory Module loaded: {memory_module.status()}\n"
+    status_str += f"  Code Generator loaded: {code_generator.status()}\n"
+    status_str += f"  Research Module loaded: {research_module.status()}\n"
+    status_str += f"  Personality Module loaded: {personality_module.status()}\n"
+    status_str += f"  Current personality: {personality_module.get_personality()}\n"
+    return status_str
 
 
-def run_continuous():
-    # Try to use a continuous run loop from cognitive_engine, if available.
-    if hasattr(cognitive_engine, "run_cycle"):
-        print("Entering continuous run mode. Press Ctrl+C to exit.")
-        try:
-            while True:
-                result = cognitive_engine.run_cycle()
-                # Optionally, print out the result of each cycle.
-                print(f"Cycle result: {result}")
-                time.sleep(0.5)  # Adjust sleep time as needed.
-        except KeyboardInterrupt:
-            print("Continuous run mode terminated.")
-    else:
-        print("Continuous run mode is not available in cognitive_engine.")
+def list_modules():
+    modules = [
+        "Cognitive Engine",
+        "Learning Module",
+        "Memory Module",
+        "Code Generator",
+        "Research Module",
+        "Personality Module"
+    ]
+    return "\n".join(modules)
 
+
+# ===============================================================
+# Interactive Loop
+# ===============================================================
 
 def interactive_loop():
-    logger.info("Starting interactive session...")
-
-    # Initialize cognitive engine if an initialization function is provided.
-    if hasattr(cognitive_engine, 'initialize'):
-        try:
-            cognitive_engine.initialize()
-            logger.info("Cognitive engine initialized successfully.")
-        except Exception as e:
-            logger.error(f"Error during cognitive engine initialization: {e}")
-    else:
-        logger.info("No initialization required for cognitive engine.")
-
+    logging.info("Aurora Interactive Session Starting...")
     print("Enter your command or query (type 'help' for options):")
-    
     while True:
         try:
             user_input = input("Aurora> ").strip()
             if not user_input:
                 continue
 
-            parts = user_input.split(maxsplit=1)
-            command = parts[0].lower()
-
-            if command in ['exit', 'quit']:
-                logger.info("Exiting interactive session.")
+            if user_input.lower() in ["exit", "quit"]:
+                print("Exiting interactive session.")
                 break
-            elif command == "help":
-                print_help()
-            elif command == "status":
-                show_status()
-            elif command == "modules":
-                list_modules()
-            elif command == "memory":
-                show_memory()
-            elif command == "query":
-                if len(parts) > 1:
-                    response = process_query(parts[1])
-                    print(response)
-                else:
-                    print("Usage: query <your query>")
-            elif command == "reload":
-                reload_modules()
-            elif command == "reset":
-                reset_system()
-            elif command == "run":
-                run_continuous()
-            else:
-                response = process_query(user_input)
+
+            elif user_input.lower() == "help":
+                print("""Available commands:
+  help                      - Show this help message.
+  status                    - Show system status.
+  modules                   - List loaded modules.
+  memory                    - Display memory module content.
+  query <your query>        - Process a query through the cognitive engine.
+  reload                    - Reload all modules.
+  reset                     - Reset personality and clear temporary memory.
+  run                       - Enter continuous run mode (if supported).
+  exit or quit              - Exit the interactive session.
+
+Any other input is forwarded to the cognitive engine as a query.
+""")
+
+            elif user_input.lower() == "status":
+                print(show_status())
+
+            elif user_input.lower() == "modules":
+                print("Loaded modules:")
+                print(list_modules())
+
+            elif user_input.lower() == "memory":
+                print("Memory contents:")
+                print(memory_module.show_memory())
+
+            elif user_input.lower().startswith("query "):
+                query_text = user_input[6:].strip()
+                response = cognitive_engine.process_query(query_text)
                 print(response)
-            
+
+            elif user_input.lower() == "reload":
+                reload_modules()
+                print("Modules reloaded.")
+
+            elif user_input.lower() == "reset":
+                personality_module.update_personality("undefined")
+                memory_module.memories.clear()
+                print("Personality reset and memory cleared.")
+
+            elif user_input.lower() == "run":
+                print("Entering continuous run mode. Press Ctrl+C to exit.")
+                try:
+                    while True:
+                        print("Cycle result: Cycle completed.")
+                        time.sleep(1)  # Simulate delay between cycles.
+                except KeyboardInterrupt:
+                    print("Continuous run mode terminated.")
+
+            else:
+                # Forward any other input as a query.
+                response = cognitive_engine.process_query(user_input)
+                print(response)
+
         except KeyboardInterrupt:
-            logger.info("KeyboardInterrupt received. Exiting interactive session.")
-            break
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
+            print("\nKeyboardInterrupt received. Exiting interactive session.")
             break
 
-if __name__ == "__main__":
-    logger.info("Aurora Interactive Session Starting...")
+# ===============================================================
+# Main Execution
+# ===============================================================
+
+if __name__ == '__main__':
+    initialize_system()
     interactive_loop()

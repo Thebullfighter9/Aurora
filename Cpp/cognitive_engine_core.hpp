@@ -1,27 +1,41 @@
 #ifndef COGNITIVE_ENGINE_CORE_HPP
 #define COGNITIVE_ENGINE_CORE_HPP
 
-#include <vector>
 #include <string>
+#include <vector>
 #include <mutex>
+#include <future>
+#include <chrono>
 
 class CognitiveEngineCore {
 public:
     CognitiveEngineCore();
     ~CognitiveEngineCore();
 
-    // Processes a vector of knowledge fragments concurrently and returns a synthesized introspection result.
-    std::string processData(const std::vector<std::string>& knowledgeFragments);
+    // Load (or initialize) the engine.
+    void load();
 
-    // Updates the internal state based on feedback (simulated here as a state perturbation).
-    void updateInternalState(const std::string& feedback);
+    // Process a query synchronously and return a response string.
+    std::string processQuery(const std::string &query);
+
+    // Process a query asynchronously; returns a future.
+    std::future<std::string> processQueryAsync(const std::string &query);
+
+    // Return an introspection report.
+    std::string introspect() const;
+
+    // Simulate reloading the engine (clears and re-initializes state).
+    void reload();
+
+    // Return the current load status.
+    bool status() const;
 
 private:
-    std::vector<double> internalState;
-    std::mutex stateMutex; // Protects internalState during updates
-
-    // Helper: Processes a single knowledge fragment (simulating deep analysis).
-    std::string processFragment(const std::string& fragment);
+    bool loaded;
+    int introspectionLevel; // Higher value indicates deeper introspection.
+    std::vector<std::string> sessionLog;
+    std::chrono::system_clock::time_point lastQueryTime;
+    mutable std::mutex mtx; // Protect shared resources.
 };
 
 #endif // COGNITIVE_ENGINE_CORE_HPP
