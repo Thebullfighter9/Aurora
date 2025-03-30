@@ -5,37 +5,39 @@
 #include <vector>
 #include <mutex>
 #include <future>
-#include <chrono>
 
 class CognitiveEngineCore {
 public:
     CognitiveEngineCore();
     ~CognitiveEngineCore();
 
-    // Load (or initialize) the engine.
+    // Loads (initializes) the cognitive engine.
     void load();
 
-    // Process a query synchronously and return a response string.
+    // Processes a query synchronously and returns a response string.
     std::string processQuery(const std::string &query);
 
-    // Process a query asynchronously; returns a future.
+    // Processes a query asynchronously.
     std::future<std::string> processQueryAsync(const std::string &query);
 
-    // Return an introspection report.
+    // Returns an introspection report (e.g. last query time and introspection level).
     std::string introspect() const;
 
-    // Simulate reloading the engine (clears and re-initializes state).
+    // Reloads the cognitive engine (simulated).
     void reload();
 
-    // Return the current load status.
+    // Returns the current load status.
     bool status() const;
 
 private:
     bool loaded;
-    int introspectionLevel; // Higher value indicates deeper introspection.
     std::vector<std::string> sessionLog;
-    std::chrono::system_clock::time_point lastQueryTime;
-    mutable std::mutex mtx; // Protect shared resources.
+    int introspectionLevel;
+    std::string lastQueryTime;
+    mutable std::mutex mtx;
+
+    // Helper function to get the current time as a string.
+    std::string getCurrentTime() const;
 };
 
 #endif // COGNITIVE_ENGINE_CORE_HPP

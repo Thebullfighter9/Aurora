@@ -1,38 +1,77 @@
-#include "cognitive_engine_core.hpp"
 #include <iostream>
-#include <sstream>
-#include <regex>
-#include <thread>
+#include <string>
+#include <vector>
+#include <mutex>
 #include <future>
-#include <chrono>
+#include <sstream>
 #include <ctime>
+#include <regex>
+#include <chrono>
+#include <thread>
 
-CognitiveEngineCore::CognitiveEngineCore()
-    : loaded(false), introspectionLevel(1)
-{
-    // Constructor: Initialization can be performed later via load()
-}
+// =================== CognitiveEngineCore Class Declaration & Implementation ===================
 
-CognitiveEngineCore::~CognitiveEngineCore() {
-    // Destructor (if any cleanup is needed)
+class CognitiveEngineCore {
+public:
+    CognitiveEngineCore();
+    ~CognitiveEngineCore();
+
+    // Loads (initializes) the cognitive engine.
+    void load();
+
+    // Processes a query synchronously and returns a response string.
+    std::string processQuery(const std::string &query);
+
+    // Processes a query asynchronously.
+    std::future<std::string> processQueryAsync(const std::string &query);
+
+    // Returns an introspection report.
+    std::string introspect() const;
+
+    // Reloads the cognitive engine (simulated).
+    void reload();
+
+    // Returns the current load status.
+    bool status() const;
+
+private:
+    bool loaded;
+    std::vector<std::string> sessionLog;
+    int introspectionLevel;
+    std::string lastQueryTime;
+    mutable std::mutex mtx;
+
+    // Helper function: returns current time as string "YYYY-MM-DD HH:MM:SS".
+    std::string getCurrentTime() const;
+};
+
+CognitiveEngineCore::CognitiveEngineCore() : loaded(false), introspectionLevel(1) {}
+
+CognitiveEngineCore::~CognitiveEngineCore() {}
+
+std::string CognitiveEngineCore::getCurrentTime() const {
+    std::time_t now = std::time(nullptr);
+    char buf[64];
+    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    return std::string(buf);
 }
 
 void CognitiveEngineCore::load() {
     std::lock_guard<std::mutex> lock(mtx);
     loaded = true;
-    lastQueryTime = std::chrono::system_clock::now();
-    sessionLog.push_back("Cognitive Engine Core initialized.");
-    // Log initialization with a timestamp.
-    std::time_t now = std::chrono::system_clock::to_time_t(lastQueryTime);
-    std::cout << std::ctime(&now) << " Cognitive Engine Core loaded successfully." << std::endl;
+    lastQueryTime = getCurrentTime();
+    std::ostringstream oss;
+    oss << "Cognitive Engine Core loaded successfully at " << lastQueryTime;
+    sessionLog.push_back(oss.str());
+    std::cout << oss.str() << std::endl;
 }
 
 std::string CognitiveEngineCore::processQuery(const std::string &query) {
     std::lock_guard<std::mutex> lock(mtx);
-    lastQueryTime = std::chrono::system_clock::now();
+    lastQueryTime = getCurrentTime();
     sessionLog.push_back("Processed query: " + query);
 
-    // Basic sentiment analysis (using regex).
+    // Basic sentiment analysis using regular expressions.
     std::string sentiment = "neutral";
     std::regex positive("\\b(happy|joy|excellent|good)\\b", std::regex_constants::icase);
     std::regex negative("\\b(sad|bad|terrible|angry)\\b", std::regex_constants::icase);
@@ -42,58 +81,82 @@ std::string CognitiveEngineCore::processQuery(const std::string &query) {
         sentiment = "negative";
     }
 
-    // Build the response message.
-    std::ostringstream response;
-    response << "Query: '" << query << "' processed. Detected sentiment: " << sentiment << ". ";
-    
-    // Trigger deeper processing if custom keywords are detected.
-    if (query.find("synergy") != std::string::npos ||
-        query.find("conscious") != std::string::npos ||
-        query.find("adaptive") != std::string::npos ||
-        query.find("self-aware") != std::string::npos)
-    {
-        response << "Deep cognitive processing triggered.";
-    } else {
-        response << "Standard processing applied.";
+    // Check for custom keywords triggering deep processing.
+    bool deepProcessing = false;
+    std::vector<std::string> keywords = {"synergy", "conscious", "adaptive", "self-aware"};
+    for (const auto &keyword : keywords) {
+        if (query.find(keyword) != std::string::npos) {
+            deepProcessing = true;
+            break;
+        }
     }
 
-    // Log the response.
-    std::cout << response.str() << std::endl;
-    return response.str();
+    // Build the response.
+    std::ostringstream oss;
+    oss << "Query: '" << query << "' processed. Detected sentiment: " << sentiment << ". ";
+    if (deepProcessing)
+        oss << "Deep cognitive processing triggered.";
+    else
+        oss << "Standard processing applied.";
+    std::string response = oss.str();
+    std::cout << response << std::endl;
+    return response;
 }
 
 std::future<std::string> CognitiveEngineCore::processQueryAsync(const std::string &query) {
-    // Launch asynchronous processing.
     return std::async(std::launch::async, &CognitiveEngineCore::processQuery, this, query);
 }
 
 std::string CognitiveEngineCore::introspect() const {
     std::lock_guard<std::mutex> lock(mtx);
-    std::ostringstream report;
-    report << "System Introspection Report: ";
-    if (lastQueryTime.time_since_epoch().count() != 0) {
-        std::time_t lastTime = std::chrono::system_clock::to_time_t(lastQueryTime);
-        report << "Last query processed at " << std::ctime(&lastTime);
-    } else {
-        report << "No queries processed yet. ";
-    }
-    report << "Introspection level: " << introspectionLevel << ".";
-    std::cout << report.str() << std::endl;
-    return report.str();
+    std::ostringstream oss;
+    oss << "System Introspection Report: ";
+    if (!lastQueryTime.empty())
+        oss << "Last query processed at " << lastQueryTime << ". ";
+    else
+        oss << "No queries processed yet. ";
+    oss << "Introspection level: " << introspectionLevel << ".";
+    std::string report = oss.str();
+    std::cout << report << std::endl;
+    return report;
 }
 
 void CognitiveEngineCore::reload() {
     {
         std::lock_guard<std::mutex> lock(mtx);
-        std::cout << "Reloading Cognitive Engine Core modules..." << std::endl;
+        std::cout << "Cognitive Engine Core reloading modules..." << std::endl;
         loaded = false;
     }
-    // Simulate reload delay.
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); // simulate delay
     load();
 }
 
 bool CognitiveEngineCore::status() const {
     std::lock_guard<std::mutex> lock(mtx);
     return loaded;
+}
+
+// ================================ Main Function Example =================================
+
+int main() {
+    CognitiveEngineCore engine;
+    engine.load();
+
+    // Synchronously process a query.
+    std::string response = engine.processQuery("I am very happy today!");
+    std::cout << "Synchronous response: " << response << std::endl;
+
+    // Asynchronously process a query.
+    auto asyncResponse = engine.processQueryAsync("Testing synergy in deep processing.");
+    std::cout << "Asynchronous response: " << asyncResponse.get() << std::endl;
+
+    // Print introspection report.
+    std::string report = engine.introspect();
+    std::cout << report << std::endl;
+
+    // Reload the engine.
+    engine.reload();
+    std::cout << "Engine status: " << (engine.status() ? "Loaded" : "Not loaded") << std::endl;
+
+    return 0;
 }
