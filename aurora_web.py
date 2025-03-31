@@ -1,42 +1,41 @@
 #!/usr/bin/env python3
 """
-Aurora Web Platform
--------------------
-This is the integrated web–based platform for the Aurora AI system. It
-combines various modules:
-  - Cognitive Engine
-  - Learning Module
-  - Memory Module
-  - Code Generator
-  - Research Module
-  - Personality Module
+Aurora Web System (Fully Integrated)
+--------------------------------------
+This Flask-based web application serves as a front end for the Aurora system.
+It integrates real API calls for:
+  - Cognitive processing via OpenAI’s API.
+  - Code generation via OpenAI’s API.
+  - Research via Google Custom Search API.
+  - Learning and Memory management (which can be extended for persistent learning).
 
-The web interface lets you check system status, submit queries,
-trigger auto–research on a set of topics, reload modules, and reset
-the system (clearing memory and resetting personality).
+Modules:
+  - CognitiveEngine: Processes queries using OpenAI.
+  - LearningModule: Logs learning events (expandable for machine learning routines).
+  - MemoryModule: Stores and displays memories.
+  - CodeGenerator: Generates code based on a description via OpenAI.
+  - ResearchModule: Performs real research using Google Custom Search.
+  - PersonalityModule: Maintains and updates personality state.
 
-Note: This is a simulation of the envisioned behavior. You can expand
-each module to call real APIs, do real research, and eventually evolve
-toward autonomous, self–aware processing.
+Set the following environment variables before running:
+  OPENAI_API_KEY, GOOGLE_API_KEY, CUSTOM_SEARCH_ENGINE_ID
 """
 
+import os
 import logging
 import time
-import random
-from flask import Flask, request, render_template_string
+import requests
+import openai
+from flask import Flask, request, render_template_string, jsonify
 
-# ----------------------------
-# Logging Setup
-# ----------------------------
+# Set up logging.
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s]: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# ----------------------------
-# Module Classes
-# ----------------------------
+# =================== Module Definitions ===================
 
 class CognitiveEngine:
     def __init__(self):
@@ -47,9 +46,22 @@ class CognitiveEngine:
         logging.info("Cognitive Engine loaded.")
 
     def process_query(self, query):
-        response = f"Cognitive Engine processed: {query}"
-        logging.info(response)
-        return response
+        if not os.getenv("OPENAI_API_KEY"):
+            logging.error("No valid OpenAI API key provided.")
+            return "Error: No valid OpenAI API key provided."
+        try:
+            response = openai.Completion.create(
+                engine="text-davinci-003",  # adjust as needed
+                prompt=query,
+                max_tokens=50,
+                temperature=0.7
+            )
+            answer = response.choices[0].text.strip()
+            logging.info(f"Cognitive Engine processed query: {query}")
+            return answer
+        except Exception as e:
+            logging.error(f"Error processing query: {e}")
+            return f"Error processing query: {e}"
 
     def reload(self):
         logging.info("Cognitive Engine reloaded.")
@@ -60,12 +72,15 @@ class CognitiveEngine:
 class LearningModule:
     def __init__(self):
         self.loaded = False
+        self.learning_log = []
 
     def load(self):
         self.loaded = True
         logging.info("Learning Module loaded.")
 
     def learn(self, data):
+        # In a real system, here you might update a model, etc.
+        self.learning_log.append(f"Learned: {data}")
         logging.info(f"Learning from: {data}")
 
     def reload(self):
@@ -90,8 +105,7 @@ class MemoryModule:
     def show_memory(self):
         if not self.memories:
             return "No memories stored."
-        # Using <br> to format for HTML.
-        return "<br>".join(self.memories)
+        return "\n".join(self.memories)
 
     def reload(self):
         logging.info("Memory Module reloaded.")
@@ -108,9 +122,23 @@ class CodeGenerator:
         logging.info("Code Generator loaded.")
 
     def generate_code(self, description):
-        code = f"# Generated code for: {description}"
-        logging.info(f"Code generated: {code}")
-        return code
+        if not os.getenv("OPENAI_API_KEY"):
+            logging.error("No valid OpenAI API key provided for code generation.")
+            return "Error: No valid OpenAI API key provided for code generation."
+        prompt = f"Generate well-documented code for: {description}"
+        try:
+            response = openai.Completion.create(
+                engine="text-davinci-003",
+                prompt=prompt,
+                max_tokens=150,
+                temperature=0.5
+            )
+            code = response.choices[0].text.strip()
+            logging.info(f"Code generated for: {description}")
+            return code
+        except Exception as e:
+            logging.error(f"Error generating code: {e}")
+            return f"Error generating code: {e}"
 
     def reload(self):
         logging.info("Code Generator reloaded.")
@@ -127,10 +155,34 @@ class ResearchModule:
         logging.info("Research Module loaded.")
 
     def research_topic(self, topic):
-        # Simulated research: return one of a few dummy results.
-        result = f"Research result for {topic}: {random.choice(['Data A', 'Data B', 'Data C'])}"
-        logging.info(result)
-        return result
+        GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+        CUSTOM_SEARCH_ENGINE_ID = os.getenv("CUSTOM_SEARCH_ENGINE_ID")
+        if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
+            logging.error("Google API credentials not provided.")
+            return "Error: Missing Google API credentials."
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "key": GOOGLE_API_KEY,
+            "cx": CUSTOM_SEARCH_ENGINE_ID,
+            "q": topic,
+            "num": 1
+        }
+        try:
+            r = requests.get(url, params=params)
+            if r.status_code == 200:
+                data = r.json()
+                if "items" in data and len(data["items"]) > 0:
+                    snippet = data["items"][0].get("snippet", "No snippet available.")
+                    result = f"Research result for {topic}: {snippet}"
+                else:
+                    result = f"Research result for {topic}: No results found."
+            else:
+                result = f"Failed to research {topic}: HTTP {r.status_code}"
+            logging.info(result)
+            return result
+        except Exception as e:
+            logging.error(f"Error during research: {e}")
+            return f"Error during research: {e}"
 
     def reload(self):
         logging.info("Research Module reloaded.")
@@ -160,9 +212,8 @@ class PersonalityModule:
     def status(self):
         return self.loaded
 
-# ----------------------------
-# Global Instances & Initialization
-# ----------------------------
+# =================== Global Instances and Initialization ===================
+
 cognitive_engine = CognitiveEngine()
 learning_module = LearningModule()
 memory_module = MemoryModule()
@@ -177,6 +228,7 @@ def initialize_system():
     code_generator.load()
     research_module.load()
     personality_module.load()
+
     personality_module.update_personality("Aurora feels curious today.")
     memory_module.add_memory("System initialized at " + time.strftime("%Y-%m-%d %H:%M:%S"))
     narrative = {
@@ -196,144 +248,147 @@ def reload_modules():
     research_module.reload()
     personality_module.reload()
 
-def get_status():
-    return {
-        'Cognitive Engine': cognitive_engine.status(),
-        'Learning Module': learning_module.status(),
-        'Memory Module': memory_module.status(),
-        'Code Generator': code_generator.status(),
-        'Research Module': research_module.status(),
-        'Personality Module': personality_module.status(),
-        'Current Personality': personality_module.get_personality()
-    }
+def show_status():
+    status_str = "System Status:\n"
+    status_str += f"  Cognitive Engine loaded: {cognitive_engine.status()}\n"
+    status_str += f"  Learning Module loaded: {learning_module.status()}\n"
+    status_str += f"  Memory Module loaded: {memory_module.status()}\n"
+    status_str += f"  Code Generator loaded: {code_generator.status()}\n"
+    status_str += f"  Research Module loaded: {research_module.status()}\n"
+    status_str += f"  Personality Module loaded: {personality_module.status()}\n"
+    status_str += f"  Current personality: {personality_module.get_personality()}\n"
+    return status_str
 
-# ----------------------------
-# Flask Web App Setup
-# ----------------------------
+# =================== Flask Web Application ===================
+
 app = Flask(__name__)
 
-# HTML template (using Jinja2) for the web interface.
-home_template = """
-<!doctype html>
-<html>
-<head>
-    <title>Aurora AI Web Interface</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
-        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 5px; }
-        h1, h2 { text-align: center; }
-        .section { margin-bottom: 20px; }
-        .status, .memory, .result { border: 1px solid #ccc; background: #eee; padding: 10px; margin: 10px 0; }
-        input[type="text"] { width: 70%; padding: 8px; }
-        button { padding: 8px 16px; }
-        .footer { text-align: center; margin-top: 20px; font-size: 0.8em; color: #888; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h1>Aurora AI Web Interface</h1>
-    <div class="section">
-        <h2>System Status</h2>
-        <div class="status">
-            {% for key, value in status.items() %}
-                <strong>{{ key }}:</strong> {{ value }}<br>
-            {% endfor %}
-        </div>
-    </div>
-    <div class="section">
-        <h2>Memory</h2>
-        <div class="memory">
-            {{ memory|safe }}
-        </div>
-    </div>
-    <div class="section">
-        <h2>Submit Query</h2>
-        <form action="{{ url_for('query') }}" method="post">
-            <input type="text" name="query" placeholder="Enter your query here">
-            <button type="submit">Submit</button>
-        </form>
-    </div>
-    <div class="section">
-        <h2>Auto Research</h2>
-        <form action="{{ url_for('auto_research') }}" method="post">
-            <button type="submit">Start Auto Research</button>
-        </form>
-    </div>
-    <div class="section">
-        <h2>Reload Modules</h2>
-        <form action="{{ url_for('reload_route') }}" method="post">
-            <button type="submit">Reload All Modules</button>
-        </form>
-    </div>
-    <div class="section">
-        <h2>Reset System</h2>
-        <form action="{{ url_for('reset_route') }}" method="post">
-            <button type="submit">Reset Personality & Clear Memory</button>
-        </form>
-    </div>
-    {% if result %}
-    <div class="section">
-        <h2>Result</h2>
-        <div class="result">{{ result|safe }}</div>
-    </div>
-    {% endif %}
-    <div class="footer">
-        Aurora AI &copy; 2025
-    </div>
-</div>
-</body>
-</html>
-"""
-
+# Home page with simple HTML interface.
 @app.route("/", methods=["GET"])
 def home():
-    status = get_status()
-    memory_contents = memory_module.show_memory()
-    return render_template_string(home_template, status=status, memory=memory_contents, result="")
+    html = """
+    <!doctype html>
+    <html>
+      <head>
+        <title>Aurora Web Interface</title>
+      </head>
+      <body>
+        <h1>Welcome to Aurora</h1>
+        <p>Enter your query below:</p>
+        <form action="/query" method="post">
+          <input type="text" name="query" size="60">
+          <input type="submit" value="Submit">
+        </form>
+        <p><a href="/status">System Status</a> | 
+           <a href="/memory">Memory</a> |
+           <a href="/auto_research">Auto Research</a></p>
+      </body>
+    </html>
+    """
+    return render_template_string(html)
 
+# Process query using Cognitive Engine.
 @app.route("/query", methods=["POST"])
 def query():
     user_query = request.form.get("query", "")
+    if not user_query:
+        return "No query provided.", 400
     response = cognitive_engine.process_query(user_query)
-    memory_module.add_memory("Query processed: " + user_query)
-    status = get_status()
-    memory_contents = memory_module.show_memory()
-    return render_template_string(home_template, status=status, memory=memory_contents, result=response)
+    # Simulate learning from query.
+    learning_module.learn(user_query)
+    memory_module.add_memory(f"Query: {user_query} -> {response}")
+    return render_template_string("""
+      <!doctype html>
+      <html>
+        <head>
+          <title>Query Result</title>
+        </head>
+        <body>
+          <h1>Query Result</h1>
+          <p>{{response}}</p>
+          <p><a href="/">Back to Home</a></p>
+        </body>
+      </html>
+    """, response=response)
 
-@app.route("/auto_research", methods=["POST"])
+# Show system status.
+@app.route("/status", methods=["GET"])
+def status():
+    return render_template_string("""
+      <!doctype html>
+      <html>
+        <head>
+          <title>System Status</title>
+        </head>
+        <body>
+          <h1>System Status</h1>
+          <pre>{{status}}</pre>
+          <p><a href="/">Back to Home</a></p>
+        </body>
+      </html>
+    """, status=show_status())
+
+# Show memory contents.
+@app.route("/memory", methods=["GET"])
+def memory():
+    mem = memory_module.show_memory()
+    return render_template_string("""
+      <!doctype html>
+      <html>
+        <head>
+          <title>Memory Contents</title>
+        </head>
+        <body>
+          <h1>Memory Contents</h1>
+          <pre>{{memories}}</pre>
+          <p><a href="/">Back to Home</a></p>
+        </body>
+      </html>
+    """, memories=mem)
+
+# Auto research mode: runs research on a set of topics.
+@app.route("/auto_research", methods=["GET"])
 def auto_research():
     topics = ["Quantum Computing", "Artificial Intelligence", "Climate Change", "Blockchain", "Genomics", "Space Exploration"]
-    results = []
+    results = {}
     for topic in topics:
         result = research_module.research_topic(topic)
-        memory_module.add_memory("Auto research: " + topic)
-        results.append(f"<strong>{topic}</strong>: {result}")
-        time.sleep(0.5)
-    combined_result = "<br>".join(results)
-    status = get_status()
-    memory_contents = memory_module.show_memory()
-    return render_template_string(home_template, status=status, memory=memory_contents, result=combined_result)
+        results[topic] = result
+        # Optionally, log or store these research results in memory.
+        memory_module.add_memory(f"Research on {topic}: {result}")
+    return render_template_string("""
+      <!doctype html>
+      <html>
+        <head>
+          <title>Auto Research Results</title>
+        </head>
+        <body>
+          <h1>Auto Research Results</h1>
+          {% for topic, result in results.items() %}
+            <h3>{{ topic }}</h3>
+            <p>{{ result }}</p>
+          {% endfor %}
+          <p><a href="/">Back to Home</a></p>
+        </body>
+      </html>
+    """, results=results)
 
-@app.route("/reload", methods=["POST"])
-def reload_route():
+# Reload all modules.
+@app.route("/reload", methods=["GET"])
+def reload_all():
     reload_modules()
-    memory_module.add_memory("Modules reloaded at " + time.strftime("%Y-%m-%d %H:%M:%S"))
-    status = get_status()
-    memory_contents = memory_module.show_memory()
-    return render_template_string(home_template, status=status, memory=memory_contents, result="Modules reloaded.")
+    return "Modules reloaded.<br><a href='/'>Back to Home</a>"
 
-@app.route("/reset", methods=["POST"])
-def reset_route():
+# Reset personality and clear memory.
+@app.route("/reset", methods=["GET"])
+def reset_system():
     personality_module.update_personality("undefined")
     memory_module.memories.clear()
-    memory_module.add_memory("System reset at " + time.strftime("%Y-%m-%d %H:%M:%S"))
-    status = get_status()
-    memory_contents = memory_module.show_memory()
-    return render_template_string(home_template, status=status, memory=memory_contents, result="System reset and memory cleared.")
+    return "System reset: Personality cleared and memory wiped.<br><a href='/'>Back to Home</a>"
 
-# ----------------------------
-# Main Execution
-# ----------------------------
+# Main entry point.
 if __name__ == '__main__':
     initialize_system()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.getenv("PORT", 5000))
+    # Start the Flask app.
+    app.run(host="0.0.0.0", port=port, debug=True)
