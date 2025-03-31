@@ -1,38 +1,35 @@
 #!/usr/bin/env python3
 """
-Research Module (Updated)
--------------------------
-This module uses real API calls to perform research via Google Custom Search
-and to analyze results using OpenAI's GPT API. Detailed error messages are
-logged to help with debugging API issues.
+Research Module (Fully Updated)
+--------------------------------
+This module performs real API calls using your provided credentials.
+It queries Google Custom Search for research data and uses the OpenAI GPT API
+to generate concise summaries or key terms.
+
+**WARNING:** Hardcoding API keys is insecure for production use.
 """
 
-import os
 import requests
 import logging
 
 logger = logging.getLogger("Aurora.Research")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s',
+                              datefmt='%Y-%m-%d %H:%M:%S')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Retrieve API keys and engine ID from environment variables
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Hardcoded API credentials (for demonstration purposes only)
+GOOGLE_API_KEY = "AIzaSyAztG3JZGoFUQ6EflvI77P9ntTZLqNwjyo"
+CUSTOM_SEARCH_ENGINE_ID = "auorora-1743163807274"
+OPENAI_API_KEY = "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"
 
 def research(topic):
     """
-    Uses the Google Custom Search API to search for the topic and returns a snippet
-    from the first result.
+    Queries the Google Custom Search API for the specified topic.
+    Returns the snippet of the first result or an error message.
     """
-    if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
-        result_text = "Google API key or Custom Search Engine ID not provided."
-        logger.error(result_text)
-        return result_text
-
     logger.info(f"Researching topic with Google Custom Search: {topic}")
     try:
         url = "https://www.googleapis.com/customsearch/v1"
@@ -63,7 +60,8 @@ def research(topic):
 
 def analyze_research(research_text):
     """
-    Uses the OpenAI GPT API to produce a brief summary or key terms for the research text.
+    Uses the OpenAI GPT API to produce a brief summary or list key terms
+    for the provided research text.
     """
     if not OPENAI_API_KEY:
         msg = "No valid GPT API key provided."
@@ -82,11 +80,11 @@ def analyze_research(research_text):
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a concise research assistant. Provide a brief summary or list key terms."
+                    "content": "You are a concise research assistant. Provide a brief summary or list 3-5 key terms."
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize the following research result in one or two sentences or list 3-5 key terms:\n\n{research_text}"
+                    "content": f"Summarize the following research result in one or two sentences, or list key terms:\n\n{research_text}"
                 }
             ],
             "temperature": 0.3
@@ -108,7 +106,7 @@ def analyze_research(research_text):
 
 def generate_topic(context):
     """
-    Uses the OpenAI GPT API to generate a concise research topic based on the given context.
+    Uses the OpenAI GPT API to generate a concise research topic based on the provided context.
     """
     if not OPENAI_API_KEY:
         msg = "AI Research"
@@ -153,11 +151,12 @@ def generate_topic(context):
 
 # For standalone testing
 if __name__ == "__main__":
-    # Example usage:
     context = "System memory summary and recent interactions."
     topic = generate_topic(context)
     print("Generated Topic:", topic)
     research_result = research(topic)
-    print("Research Result:", research_result)
+    print("Research Result:")
+    print(research_result)
+    print("\nGPT Analysis:")
     analysis = analyze_research(research_result)
-    print("GPT Analysis:", analysis)
+    print(analysis)
