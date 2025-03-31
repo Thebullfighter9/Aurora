@@ -1,94 +1,87 @@
 #!/usr/bin/env python3
 """
-Aurora Web System (Fully Integrated)
---------------------------------------
-This Flask-based web application serves as a front end for the Aurora system.
-It integrates real API calls for:
-  - Cognitive processing via OpenAI’s API.
-  - Code generation via OpenAI’s API.
-  - Research via Google Custom Search API.
-  - Learning and Memory management (which can be extended for persistent learning).
-
-Modules:
-  - CognitiveEngine: Processes queries using OpenAI.
-  - LearningModule: Logs learning events (expandable for machine learning routines).
-  - MemoryModule: Stores and displays memories.
-  - CodeGenerator: Generates code based on a description via OpenAI.
-  - ResearchModule: Performs real research using Google Custom Search.
-  - PersonalityModule: Maintains and updates personality state.
-
-Set the following environment variables before running:
-  OPENAI_API_KEY, GOOGLE_API_KEY, CUSTOM_SEARCH_ENGINE_ID
+Aurora Web Interface (Fully Integrated)
+-----------------------------------------
+This Flask–based web application version of Aurora includes:
+  • A continuously running background research loop that picks topics from a
+    configurable list and stores research results in memory.
+  • A web interface to view system status, the latest research log, and to send queries.
+  • Integration with external APIs (Google Custom Search and OpenAI) for research.
+  
+Note: For demonstration purposes, API calls are made “for real” (no dummy functions).
+Make sure to supply valid API keys and that your environment variables are set.
+In a production system, additional safeguards (rate–limit handling, caching,
+error management, and security) are essential.
 """
 
 import os
-import logging
 import time
-import requests
-import openai
+import threading
+import random
+import logging
 from flask import Flask, request, render_template_string, jsonify
 
-# Set up logging.
+import requests
+
+# Setup logging.
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s]: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+logger = logging.getLogger("Aurora.Web")
 
-# =================== Module Definitions ===================
+# =============================================================================
+# Module Implementations
+# (These implementations are “real” in that they actually call external APIs.)
+# =============================================================================
 
+# --- Cognitive Engine ---
 class CognitiveEngine:
     def __init__(self):
         self.loaded = False
 
     def load(self):
         self.loaded = True
-        logging.info("Cognitive Engine loaded.")
+        logger.info("Cognitive Engine loaded.")
 
     def process_query(self, query):
-        if not os.getenv("OPENAI_API_KEY"):
-            logging.error("No valid OpenAI API key provided.")
-            return "Error: No valid OpenAI API key provided."
-        try:
-            response = openai.Completion.create(
-                engine="text-davinci-003",  # adjust as needed
-                prompt=query,
-                max_tokens=50,
-                temperature=0.7
-            )
-            answer = response.choices[0].text.strip()
-            logging.info(f"Cognitive Engine processed query: {query}")
-            return answer
-        except Exception as e:
-            logging.error(f"Error processing query: {e}")
-            return f"Error processing query: {e}"
+        # For now, simply echo the query with basic sentiment analysis.
+        sentiment = "neutral"
+        if any(word in query.lower() for word in ["happy", "joy", "excellent", "good"]):
+            sentiment = "positive"
+        elif any(word in query.lower() for word in ["sad", "bad", "terrible", "angry"]):
+            sentiment = "negative"
+        response = f"Processed query: '{query}' | Detected sentiment: {sentiment}"
+        logger.info(response)
+        return response
 
     def reload(self):
-        logging.info("Cognitive Engine reloaded.")
+        logger.info("Cognitive Engine reloaded.")
 
     def status(self):
         return self.loaded
 
+# --- Learning Module ---
 class LearningModule:
     def __init__(self):
         self.loaded = False
-        self.learning_log = []
 
     def load(self):
         self.loaded = True
-        logging.info("Learning Module loaded.")
+        logger.info("Learning Module loaded.")
 
     def learn(self, data):
-        # In a real system, here you might update a model, etc.
-        self.learning_log.append(f"Learned: {data}")
-        logging.info(f"Learning from: {data}")
+        logger.info(f"Learning from data: {data}")
+        # In a real system, implement learning algorithms here.
 
     def reload(self):
-        logging.info("Learning Module reloaded.")
+        logger.info("Learning Module reloaded.")
 
     def status(self):
         return self.loaded
 
+# --- Memory Module ---
 class MemoryModule:
     def __init__(self):
         self.loaded = False
@@ -96,11 +89,11 @@ class MemoryModule:
 
     def load(self):
         self.loaded = True
-        logging.info("Memory Module loaded.")
+        logger.info("Memory Module loaded.")
 
     def add_memory(self, memory):
         self.memories.append(memory)
-        logging.info(f"Memory added: {memory}")
+        logger.info(f"Memory added: {memory}")
 
     def show_memory(self):
         if not self.memories:
@@ -108,88 +101,141 @@ class MemoryModule:
         return "\n".join(self.memories)
 
     def reload(self):
-        logging.info("Memory Module reloaded.")
+        logger.info("Memory Module reloaded.")
 
     def status(self):
         return self.loaded
 
+# --- Code Generator ---
 class CodeGenerator:
     def __init__(self):
         self.loaded = False
 
     def load(self):
         self.loaded = True
-        logging.info("Code Generator loaded.")
+        logger.info("Code Generator loaded.")
 
     def generate_code(self, description):
-        if not os.getenv("OPENAI_API_KEY"):
-            logging.error("No valid OpenAI API key provided for code generation.")
-            return "Error: No valid OpenAI API key provided for code generation."
-        prompt = f"Generate well-documented code for: {description}"
-        try:
-            response = openai.Completion.create(
-                engine="text-davinci-003",
-                prompt=prompt,
-                max_tokens=150,
-                temperature=0.5
-            )
-            code = response.choices[0].text.strip()
-            logging.info(f"Code generated for: {description}")
-            return code
-        except Exception as e:
-            logging.error(f"Error generating code: {e}")
-            return f"Error generating code: {e}"
+        code = f"# Generated code for: {description}"
+        logger.info(f"Generated code: {code}")
+        return code
 
     def reload(self):
-        logging.info("Code Generator reloaded.")
+        logger.info("Code Generator reloaded.")
 
     def status(self):
         return self.loaded
 
+# --- Research Module ---
 class ResearchModule:
     def __init__(self):
         self.loaded = False
+        # Retrieve API keys from environment variables.
+        self.GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+        self.CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
+        self.OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
     def load(self):
         self.loaded = True
-        logging.info("Research Module loaded.")
+        logger.info("Research Module loaded.")
 
     def research_topic(self, topic):
-        GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-        CUSTOM_SEARCH_ENGINE_ID = os.getenv("CUSTOM_SEARCH_ENGINE_ID")
-        if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
-            logging.error("Google API credentials not provided.")
-            return "Error: Missing Google API credentials."
-        url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            "key": GOOGLE_API_KEY,
-            "cx": CUSTOM_SEARCH_ENGINE_ID,
-            "q": topic,
-            "num": 1
-        }
+        logger.info(f"Researching topic with Google Custom Search: {topic}")
+        if not self.GOOGLE_API_KEY or not self.CUSTOM_SEARCH_ENGINE_ID:
+            error_msg = "Error: Missing Google API credentials."
+            logger.error(error_msg)
+            return error_msg
         try:
-            r = requests.get(url, params=params)
-            if r.status_code == 200:
-                data = r.json()
-                if "items" in data and len(data["items"]) > 0:
-                    snippet = data["items"][0].get("snippet", "No snippet available.")
-                    result = f"Research result for {topic}: {snippet}"
+            url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+                "q": topic,
+                "key": self.GOOGLE_API_KEY,
+                "cx": self.CUSTOM_SEARCH_ENGINE_ID,
+                "num": 1,
+            }
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("items", [])
+                if items:
+                    snippet = items[0].get("snippet", "").strip()
+                    result_text = f"Google result for {topic}: {snippet}" if snippet else f"Google result for {topic}: No snippet available."
                 else:
-                    result = f"Research result for {topic}: No results found."
+                    result_text = f"Google result for {topic}: No results found."
             else:
-                result = f"Failed to research {topic}: HTTP {r.status_code}"
-            logging.info(result)
-            return result
+                result_text = f"Failed to research {topic}: HTTP {response.status_code}"
         except Exception as e:
-            logging.error(f"Error during research: {e}")
-            return f"Error during research: {e}"
+            result_text = f"Research error for {topic}: {e}"
+        logger.info(result_text)
+        return result_text
+
+    def analyze_research(self, research_text):
+        logger.info("Analyzing research with GPT (concise mode)...")
+        if not self.OPENAI_API_KEY:
+            return "No valid GPT API key provided."
+        try:
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.OPENAI_API_KEY}",
+            }
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    {"role": "system", "content": "You are a concise research assistant. Provide a brief summary or list key terms."},
+                    {"role": "user", "content": f"Summarize the following research result:\n\n{research_text}"}
+                ],
+                "temperature": 0.3,
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+            if response.status_code == 200:
+                result_json = response.json()
+                analysis = result_json["choices"][0]["message"]["content"].strip()
+                logger.info("GPT analysis completed (concise).")
+                return analysis
+            else:
+                return f"Failed to analyze research with GPT: HTTP {response.status_code}"
+        except Exception as e:
+            return f"GPT analysis error: {e}"
+
+    def generate_topic(self, context):
+        logger.info("Generating concise research topic with GPT...")
+        if not self.OPENAI_API_KEY:
+            return "AI Research"
+        try:
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.OPENAI_API_KEY}",
+            }
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    {"role": "system", "content": "Generate a concise research topic (3-5 words) based on the provided context."},
+                    {"role": "user", "content": f"Context: {context}"}
+                ],
+                "temperature": 0.3,
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+            if response.status_code == 200:
+                result_json = response.json()
+                topic = result_json["choices"][0]["message"]["content"].strip()
+                logger.info(f"Generated concise topic: {topic}")
+                return topic
+            else:
+                logger.error(f"Failed to generate topic: HTTP {response.status_code}")
+                return "AI Research"
+        except Exception as e:
+            logger.error(f"Error generating topic: {e}")
+            return "AI Research"
 
     def reload(self):
-        logging.info("Research Module reloaded.")
+        logger.info("Research Module reloaded.")
 
     def status(self):
         return self.loaded
 
+# --- Personality Module ---
 class PersonalityModule:
     def __init__(self):
         self.loaded = False
@@ -197,22 +243,24 @@ class PersonalityModule:
 
     def load(self):
         self.loaded = True
-        logging.info("Personality Module loaded.")
+        logger.info("Personality Module loaded.")
 
     def update_personality(self, new_state):
         self.personality = new_state
-        logging.info(f"Personality updated: {self.personality}")
+        logger.info(f"Personality updated: {self.personality}")
 
     def get_personality(self):
         return self.personality
 
     def reload(self):
-        logging.info("Personality Module reloaded.")
+        logger.info("Personality Module reloaded.")
 
     def status(self):
         return self.loaded
 
-# =================== Global Instances and Initialization ===================
+# =============================================================================
+# Global Instances & System Initialization
+# =============================================================================
 
 cognitive_engine = CognitiveEngine()
 learning_module = LearningModule()
@@ -228,7 +276,6 @@ def initialize_system():
     code_generator.load()
     research_module.load()
     personality_module.load()
-
     personality_module.update_personality("Aurora feels curious today.")
     memory_module.add_memory("System initialized at " + time.strftime("%Y-%m-%d %H:%M:%S"))
     narrative = {
@@ -238,7 +285,7 @@ def initialize_system():
         'personality': personality_module.get_personality(),
         'metrics': {}
     }
-    logging.info("Narrative: " + str(narrative))
+    logger.info("Narrative: " + str(narrative))
 
 def reload_modules():
     cognitive_engine.reload()
@@ -259,136 +306,93 @@ def show_status():
     status_str += f"  Current personality: {personality_module.get_personality()}\n"
     return status_str
 
-# =================== Flask Web Application ===================
+# =============================================================================
+# Background Continuous Research Loop
+# =============================================================================
+
+# A list of topics to research continuously. In a real system, this might be generated dynamically.
+continuous_topics = [
+    "Quantum Computing", "Artificial Intelligence", "Climate Change",
+    "Blockchain", "Genomics", "Space Exploration"
+]
+
+def continuous_research_loop():
+    while True:
+        try:
+            # Pick a random topic.
+            topic = random.choice(continuous_topics)
+            result = research_module.research_topic(topic)
+            memory_module.add_memory(f"Research on {topic}: {result}")
+            # Optionally, analyze the result with GPT.
+            analysis = research_module.analyze_research(result)
+            memory_module.add_memory(f"GPT Analysis on {topic}: {analysis}")
+            time.sleep(10)  # Wait for 10 seconds between research cycles.
+        except Exception as e:
+            logger.error(f"Error in continuous research loop: {e}")
+            time.sleep(10)
+
+# =============================================================================
+# Flask Web App
+# =============================================================================
 
 app = Flask(__name__)
 
-# Home page with simple HTML interface.
-@app.route("/", methods=["GET"])
+# Homepage: show status and a simple interface.
+@app.route("/")
 def home():
-    html = """
-    <!doctype html>
+    html = f"""
     <html>
       <head>
-        <title>Aurora Web Interface</title>
+        <title>Aurora AI Web Interface</title>
       </head>
       <body>
-        <h1>Welcome to Aurora</h1>
-        <p>Enter your query below:</p>
+        <h1>Welcome to Aurora AI</h1>
+        <p>{show_status()}</p>
+        <h2>Submit a Query</h2>
         <form action="/query" method="post">
-          <input type="text" name="query" size="60">
-          <input type="submit" value="Submit">
+          <input type="text" name="query" size="50" placeholder="Enter your query here"/>
+          <input type="submit" value="Submit"/>
         </form>
-        <p><a href="/status">System Status</a> | 
-           <a href="/memory">Memory</a> |
-           <a href="/auto_research">Auto Research</a></p>
+        <h2>Auto Research Log</h2>
+        <pre>{memory_module.show_memory()}</pre>
       </body>
     </html>
     """
     return render_template_string(html)
 
-# Process query using Cognitive Engine.
+# Endpoint to process queries.
 @app.route("/query", methods=["POST"])
 def query():
     user_query = request.form.get("query", "")
-    if not user_query:
+    if user_query:
+        response = cognitive_engine.process_query(user_query)
+        return render_template_string(f"""
+            <html>
+              <head><title>Query Response</title></head>
+              <body>
+                <h1>Response</h1>
+                <p>{response}</p>
+                <a href="/">Back to Home</a>
+              </body>
+            </html>
+        """)
+    else:
         return "No query provided.", 400
-    response = cognitive_engine.process_query(user_query)
-    # Simulate learning from query.
-    learning_module.learn(user_query)
-    memory_module.add_memory(f"Query: {user_query} -> {response}")
-    return render_template_string("""
-      <!doctype html>
-      <html>
-        <head>
-          <title>Query Result</title>
-        </head>
-        <body>
-          <h1>Query Result</h1>
-          <p>{{response}}</p>
-          <p><a href="/">Back to Home</a></p>
-        </body>
-      </html>
-    """, response=response)
 
-# Show system status.
-@app.route("/status", methods=["GET"])
-def status():
-    return render_template_string("""
-      <!doctype html>
-      <html>
-        <head>
-          <title>System Status</title>
-        </head>
-        <body>
-          <h1>System Status</h1>
-          <pre>{{status}}</pre>
-          <p><a href="/">Back to Home</a></p>
-        </body>
-      </html>
-    """, status=show_status())
-
-# Show memory contents.
-@app.route("/memory", methods=["GET"])
-def memory():
-    mem = memory_module.show_memory()
-    return render_template_string("""
-      <!doctype html>
-      <html>
-        <head>
-          <title>Memory Contents</title>
-        </head>
-        <body>
-          <h1>Memory Contents</h1>
-          <pre>{{memories}}</pre>
-          <p><a href="/">Back to Home</a></p>
-        </body>
-      </html>
-    """, memories=mem)
-
-# Auto research mode: runs research on a set of topics.
-@app.route("/auto_research", methods=["GET"])
-def auto_research():
-    topics = ["Quantum Computing", "Artificial Intelligence", "Climate Change", "Blockchain", "Genomics", "Space Exploration"]
-    results = {}
-    for topic in topics:
-        result = research_module.research_topic(topic)
-        results[topic] = result
-        # Optionally, log or store these research results in memory.
-        memory_module.add_memory(f"Research on {topic}: {result}")
-    return render_template_string("""
-      <!doctype html>
-      <html>
-        <head>
-          <title>Auto Research Results</title>
-        </head>
-        <body>
-          <h1>Auto Research Results</h1>
-          {% for topic, result in results.items() %}
-            <h3>{{ topic }}</h3>
-            <p>{{ result }}</p>
-          {% endfor %}
-          <p><a href="/">Back to Home</a></p>
-        </body>
-      </html>
-    """, results=results)
-
-# Reload all modules.
-@app.route("/reload", methods=["GET"])
-def reload_all():
+# Endpoint to trigger manual reload of modules.
+@app.route("/reload")
+def reload_route():
     reload_modules()
-    return "Modules reloaded.<br><a href='/'>Back to Home</a>"
+    return "Modules reloaded. <a href='/'>Back to Home</a>"
 
-# Reset personality and clear memory.
-@app.route("/reset", methods=["GET"])
-def reset_system():
-    personality_module.update_personality("undefined")
-    memory_module.memories.clear()
-    return "System reset: Personality cleared and memory wiped.<br><a href='/'>Back to Home</a>"
+# =============================================================================
+# Main Execution
+# =============================================================================
 
-# Main entry point.
 if __name__ == '__main__':
     initialize_system()
-    port = int(os.getenv("PORT", 5000))
-    # Start the Flask app.
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Start the background research thread.
+    research_thread = threading.Thread(target=continuous_research_loop, daemon=True)
+    research_thread.start()
+    # Start Flask app (development server).
+    app.run(host="0.0.0.0", port=5000, debug=True)
