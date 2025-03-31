@@ -23,7 +23,7 @@ logger.addHandler(ch)
 # ----------------------------------------------------------------------------------
 GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"  # Example: Must start with 'AIza...'
 CUSTOM_SEARCH_ENGINE_ID = "auorora-1743163807274"             # Your custom search engine ID
-OPENAI_API_KEY = "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"                # Replace with your valid OpenAI API key
+OPENAI_API_KEY = "key_nVJf0WOm2TBXIgsO"                # Replace with your valid OpenAI API key
 
 # ----------------------------------------------------------------------------------
 # Research using Google Custom Search API.
