@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-Research Module
----------------
-This module performs research using Google Custom Search and OpenAI's GPT API.
-It returns real API responses (if the keys are valid and the services are enabled).
+Research Module (Fully Updated)
+--------------------------------
+This module performs research using the Google Custom Search API and 
+OpenAI's GPT API. It makes actual API calls and returns live responses.
+
+WARNING: Hardcoding API keys is for demonstration purposes only.
+Secure them properly for production.
 """
 
 import requests
@@ -12,14 +15,14 @@ import logging
 logger = logging.getLogger("Aurora.Research")
 logger.setLevel(logging.INFO)
 
-# Hardcoded API credentials (for testing only; secure these in production!)
+# Hardcoded API credentials (for testing/demonstration only)
 GOOGLE_API_KEY = "AIzaSyAztG3JZGoFUQ6EflvI77P9ntTZLqNwjyo"
 CUSTOM_SEARCH_ENGINE_ID = "auorora-1743163807274"
 OPENAI_API_KEY = "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"
 
 def research(topic):
     """
-    Uses Google Custom Search API to search for the topic and returns a snippet from the first result.
+    Searches for the topic using Google Custom Search and returns a snippet from the first result.
     """
     logger.info(f"Researching topic with Google Custom Search: {topic}")
     try:
@@ -43,7 +46,7 @@ def research(topic):
             else:
                 result_text = f"Google result for {topic}: No results found."
         else:
-            result_text = f"Failed to research {topic}: HTTP {response.status_code}"
+            result_text = f"Failed to research {topic}: HTTP {response.status_code} - {response.text}"
     except Exception as e:
         result_text = f"Research error for {topic}: {e}"
     logger.info(result_text)
@@ -51,7 +54,7 @@ def research(topic):
 
 def analyze_research(research_text):
     """
-    Uses the OpenAI GPT API to produce a brief summary or key terms for the research text.
+    Uses the OpenAI GPT API to produce a concise summary or key terms for the research text.
     """
     if not OPENAI_API_KEY:
         return "No valid GPT API key provided."
@@ -84,7 +87,7 @@ def analyze_research(research_text):
             logger.info("GPT analysis completed (concise).")
             return analysis
         else:
-            return f"Failed to analyze research with GPT: HTTP {response.status_code}"
+            return f"Failed to analyze research with GPT: HTTP {response.status_code} - {response.text}"
     except Exception as e:
         return f"GPT analysis error: {e}"
 
@@ -122,7 +125,7 @@ def generate_topic(context):
             logger.info(f"Generated concise topic: {topic}")
             return topic
         else:
-            logger.error(f"Failed to generate topic: HTTP {response.status_code}")
+            logger.error(f"Failed to generate topic: HTTP {response.status_code} - {response.text}")
             return "AI Research"
     except Exception as e:
         logger.error(f"Error generating topic: {e}")
