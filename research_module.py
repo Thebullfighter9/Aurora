@@ -21,7 +21,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 # Hardcoded API credentials (for demonstration purposes only)
-GOOGLE_API_KEY = "53832af814f74e8afb4e438673f6b962ab979c2b"
+GOOGLE_API_KEY = "AIzaSyAztG3JZGoFUQ6EflvI77P9ntTZLqNwjyo"
 CUSTOM_SEARCH_ENGINE_ID = "auorora-1743163807274"
 OPENAI_API_KEY = "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"
 
