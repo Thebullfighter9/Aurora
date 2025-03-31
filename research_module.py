@@ -1,19 +1,38 @@
-# research_module.py
+#!/usr/bin/env python3
+"""
+Research Module (Updated)
+-------------------------
+This module uses real API calls to perform research via Google Custom Search
+and to analyze results using OpenAI's GPT API. Detailed error messages are
+logged to help with debugging API issues.
+"""
+
 import os
 import requests
 import logging
 
 logger = logging.getLogger("Aurora.Research")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
-# Retrieve API keys from environment variables
+# Retrieve API keys and engine ID from environment variables
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 def research(topic):
     """
-    Uses Google Custom Search API to search for the topic and returns a snippet from the first result.
+    Uses the Google Custom Search API to search for the topic and returns a snippet
+    from the first result.
     """
+    if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
+        result_text = "Google API key or Custom Search Engine ID not provided."
+        logger.error(result_text)
+        return result_text
+
     logger.info(f"Researching topic with Google Custom Search: {topic}")
     try:
         url = "https://www.googleapis.com/customsearch/v1"
@@ -23,7 +42,7 @@ def research(topic):
             "cx": CUSTOM_SEARCH_ENGINE_ID,
             "num": 1,
         }
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
             data = response.json()
             items = data.get("items", [])
@@ -36,7 +55,7 @@ def research(topic):
             else:
                 result_text = f"Google result for {topic}: No results found."
         else:
-            result_text = f"Failed to research {topic}: HTTP {response.status_code}"
+            result_text = f"Failed to research {topic}: HTTP {response.status_code} - {response.text}"
     except Exception as e:
         result_text = f"Research error for {topic}: {e}"
     logger.info(result_text)
@@ -44,11 +63,13 @@ def research(topic):
 
 def analyze_research(research_text):
     """
-    Uses the OpenAI GPT API to produce a brief, concise summary of the research text.
+    Uses the OpenAI GPT API to produce a brief summary or key terms for the research text.
     """
     if not OPENAI_API_KEY:
-        return "No valid GPT API key provided."
-    
+        msg = "No valid GPT API key provided."
+        logger.error(msg)
+        return msg
+
     logger.info("Analyzing research with GPT (concise mode)...")
     try:
         url = "https://api.openai.com/v1/chat/completions"
@@ -56,20 +77,19 @@ def analyze_research(research_text):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {OPENAI_API_KEY}",
         }
-        # Adjust prompt to request a short summary in 1-2 sentences or key terms.
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a concise research assistant. Provide only a brief summary or key terms."
+                    "content": "You are a concise research assistant. Provide a brief summary or list key terms."
                 },
                 {
                     "role": "user",
-                    "content": f"Summarize the following research result in one or two sentences, or list 3-5 key terms:\n\n{research_text}"
+                    "content": f"Summarize the following research result in one or two sentences or list 3-5 key terms:\n\n{research_text}"
                 }
             ],
-            "temperature": 0.3,  # lower temperature for more deterministic output
+            "temperature": 0.3
         }
         response = requests.post(url, headers=headers, json=data, timeout=10)
         if response.status_code == 200:
@@ -78,17 +98,23 @@ def analyze_research(research_text):
             logger.info("GPT analysis completed (concise).")
             return analysis
         else:
-            return f"Failed to analyze research with GPT: HTTP {response.status_code}"
+            error_msg = f"Failed to analyze research with GPT: HTTP {response.status_code} - {response.text}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
-        return f"GPT analysis error: {e}"
+        error_msg = f"GPT analysis error: {e}"
+        logger.error(error_msg)
+        return error_msg
 
 def generate_topic(context):
     """
-    Uses the OpenAI GPT API to generate a concise research topic based on provided context.
-    The prompt instructs GPT to output a short query (3-5 words).
+    Uses the OpenAI GPT API to generate a concise research topic based on the given context.
     """
     if not OPENAI_API_KEY:
-        return "AI Research"
+        msg = "AI Research"
+        logger.error("No valid GPT API key provided. Defaulting to: " + msg)
+        return msg
+
     logger.info("Generating concise research topic with GPT...")
     try:
         url = "https://api.openai.com/v1/chat/completions"
@@ -101,14 +127,14 @@ def generate_topic(context):
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a creative AI that generates concise research queries. Provide only 3-5 words as a research query."
+                    "content": "You are a creative AI that generates concise research queries. Provide only 3-5 words."
                 },
                 {
                     "role": "user",
-                    "content": f"Based on this context, generate a short research query (3-5 words) that an autonomous AI might use:\n\n{context}"
+                    "content": f"Based on this context, generate a short research query (3-5 words):\n\n{context}"
                 }
             ],
-            "temperature": 0.3,  # deterministic output
+            "temperature": 0.3
         }
         response = requests.post(url, headers=headers, json=data, timeout=10)
         if response.status_code == 200:
@@ -117,20 +143,21 @@ def generate_topic(context):
             logger.info(f"Generated concise topic: {topic}")
             return topic
         else:
-            logger.error(f"Failed to generate topic: HTTP {response.status_code}")
+            error_msg = f"Failed to generate topic: HTTP {response.status_code} - {response.text}"
+            logger.error(error_msg)
             return "AI Research"
     except Exception as e:
-        logger.error(f"Error generating topic: {e}")
+        error_msg = f"Error generating topic: {e}"
+        logger.error(error_msg)
         return "AI Research"
 
 # For standalone testing
 if __name__ == "__main__":
-    context = "Memory summary: Example summary from Aurora's current memory."
-    generated_topic = generate_topic(context)
-    print("Generated Topic:", generated_topic)
-    research_result = research(generated_topic)
-    print("Research Result:")
-    print(research_result)
-    print("\nGPT Analysis:")
+    # Example usage:
+    context = "System memory summary and recent interactions."
+    topic = generate_topic(context)
+    print("Generated Topic:", topic)
+    research_result = research(topic)
+    print("Research Result:", research_result)
     analysis = analyze_research(research_result)
-    print(analysis)
+    print("GPT Analysis:", analysis)
