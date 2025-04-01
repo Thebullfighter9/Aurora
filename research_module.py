@@ -3,21 +3,19 @@
 Research Module for Aurora AI
 -----------------------------
 This module performs the following tasks:
-  1. Generates a concise research topic using OpenAI GPT.
-  2. Uses Google Custom Search API to search for that topic.
-  3. Analyzes the research result using OpenAI GPT.
+  1. Generates a concise research topic using the OpenAI GPT API.
+  2. Uses the Google Custom Search API to search for that topic.
+  3. Analyzes the research result using the OpenAI GPT API.
 
-Before running, make sure to set the following environment variables:
-  - GOOGLE_API_KEY
-  - CUSTOM_SEARCH_ENGINE_ID
-  - OPENAI_API_KEY
+Before running, set the following environment variables:
+  - GOOGLE_API_KEY: Your Google API key.
+  - CUSTOM_SEARCH_ENGINE_ID: Your Custom Search Engine ID.
+  - OPENAI_API_KEY: Your OpenAI API key.
 
-Example:
-    export GOOGLE_API_KEY="your_google_api_key"
-    export CUSTOM_SEARCH_ENGINE_ID="your_custom_search_engine_id"
-    export OPENAI_API_KEY="your_openai_api_key"
-
-Then run:
+Example usage:
+    export GOOGLE_API_KEY="your_google_api_key_here"
+    export CUSTOM_SEARCH_ENGINE_ID="your_custom_search_engine_id_here"
+    export OPENAI_API_KEY="sk-your_valid_openai_key_here"
     python3 research_module.py
 """
 
@@ -25,7 +23,7 @@ import os
 import requests
 import logging
 
-# Set up logging for debugging output.
+# Set up logging for full debug information.
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s]: %(message)s',
@@ -38,13 +36,14 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Check that the keys are provided.
+# Verify that all required credentials are provided.
 if not GOOGLE_API_KEY:
     logger.error("Google API key not provided in environment variable GOOGLE_API_KEY.")
 if not CUSTOM_SEARCH_ENGINE_ID:
     logger.error("Custom Search Engine ID not provided in environment variable CUSTOM_SEARCH_ENGINE_ID.")
 if not OPENAI_API_KEY:
     logger.error("OpenAI API key not provided in environment variable OPENAI_API_KEY.")
+
 
 def generate_topic(context):
     """
@@ -85,6 +84,7 @@ def generate_topic(context):
         logger.error(f"Exception during topic generation: {e}")
         return "AI Research"
 
+
 def research(topic):
     """
     Uses the Google Custom Search API to perform a search for the topic.
@@ -102,6 +102,8 @@ def research(topic):
         "cx": CUSTOM_SEARCH_ENGINE_ID,
         "num": 1,
     }
+    logger.debug(f"Request parameters: {params}")
+    
     try:
         response = requests.get(url, params=params, timeout=5)
         logger.debug(f"Google API Response status code: {response.status_code}")
@@ -120,8 +122,10 @@ def research(topic):
             result_text = f"Failed to research {topic}: HTTP {response.status_code} - {response.text}"
     except Exception as e:
         result_text = f"Research error for {topic}: {e}"
+    
     logger.info(result_text)
     return result_text
+
 
 def analyze_research(research_text):
     """
@@ -162,6 +166,7 @@ def analyze_research(research_text):
         logger.error(f"GPT analysis error: {e}")
         return f"GPT analysis error: {e}"
 
+
 def main():
     # Example context for topic generation.
     context = "Latest advancements in computational research and AI."
@@ -172,6 +177,7 @@ def main():
     print("Generated Topic:", topic)
     print("\nResearch Result:\n", research_result)
     print("\nGPT Analysis:\n", analysis)
+
 
 if __name__ == "__main__":
     main()
