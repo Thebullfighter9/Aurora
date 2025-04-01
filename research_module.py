@@ -5,7 +5,7 @@ research_module.py – Fully updated research module with real API calls and ext
 This module uses:
   - Google Custom Search JSON API to search for a given topic.
   - OpenAI GPT API (gpt-3.5-turbo) to analyze the research result.
-  
+
 Debug logging is enabled to trace all request and response details.
 """
 
@@ -30,8 +30,8 @@ if not logger.handlers:
 # API Credentials (For demonstration only; do not hard‑code in production!)
 # -----------------------------------------------------------------------------
 GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"  # Replace with your actual Google API key
-CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"                # Replace with your actual search engine ID (cx)
-OPENAI_API_KEY = "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"  # Replace with your actual OpenAI API key
+CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"                # Replace with your Programmable Search Engine ID
+OPENAI_API_KEY = "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"  # Your new OpenAI API key
 
 # -----------------------------------------------------------------------------
 # Function: research(topic)
@@ -73,11 +73,11 @@ def research(topic):
 # -----------------------------------------------------------------------------
 def analyze_research(research_text):
     """
-    Analyzes the research result using the OpenAI GPT API.
-    Returns a concise summary or key terms extracted from the research.
+    Uses the OpenAI GPT API to produce a brief summary or list key terms for the research result.
     """
     if not OPENAI_API_KEY:
         return "No valid GPT API key provided."
+    
     logger.info("Analyzing research with GPT (concise mode)...")
     url = "https://api.openai.com/v1/chat/completions"
     headers = {
@@ -117,7 +117,7 @@ def analyze_research(research_text):
 # -----------------------------------------------------------------------------
 def generate_topic(context):
     """
-    Generates a concise research topic (3-5 words) based on the provided context using the OpenAI GPT API.
+    Uses the OpenAI GPT API to generate a concise research topic (3-5 words) based on provided context.
     """
     if not OPENAI_API_KEY:
         return "AI Research"
