@@ -2,38 +2,44 @@
 """
 research_module.py – Fully updated research module with real API calls and extended debugging.
 
-This module performs research using the Google Custom Search JSON API and analyzes the
-results using the OpenAI GPT API. Debug logging is enabled to help trace requests and responses.
+This module uses:
+  - Google Custom Search JSON API to search for a given topic.
+  - OpenAI GPT API (gpt-3.5-turbo) to analyze the research result.
+  
+Debug logging is enabled to trace all request and response details.
 """
 
 import requests
 import logging
 import json
 
-# Set up logging for detailed debugging.
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
 logger = logging.getLogger("Aurora.Research")
 logger.setLevel(logging.DEBUG)
 if not logger.handlers:
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s]: %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-# =============================================================================
-# IMPORTANT: Replace these hard-coded keys with your own valid keys!
-# =============================================================================
-GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"  # Your Google API key for Custom Search
-CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"                # Your Programmable Search Engine ID (cx)
-OPENAI_API_KEY = "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"  # Your OpenAI API key
+# -----------------------------------------------------------------------------
+# API Credentials (For demonstration only; do not hard‑code in production!)
+# -----------------------------------------------------------------------------
+GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"  # Replace with your actual Google API key
+CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"                # Replace with your actual search engine ID (cx)
+OPENAI_API_KEY = "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"  # Replace with your actual OpenAI API key
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 # Function: research(topic)
-# =============================================================================
+# -----------------------------------------------------------------------------
 def research(topic):
     """
-    Uses the Google Custom Search API to search for the topic and returns a snippet
-    from the first result.
+    Searches for the given topic using Google Custom Search API.
+    Returns a snippet from the first search result.
     """
     logger.debug(f"research() called with topic: {topic}")
     url = "https://www.googleapis.com/customsearch/v1"
@@ -62,12 +68,13 @@ def research(topic):
     logger.info(result_text)
     return result_text
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 # Function: analyze_research(research_text)
-# =============================================================================
+# -----------------------------------------------------------------------------
 def analyze_research(research_text):
     """
-    Uses the OpenAI GPT API to produce a concise summary or key terms for the research text.
+    Analyzes the research result using the OpenAI GPT API.
+    Returns a concise summary or key terms extracted from the research.
     """
     if not OPENAI_API_KEY:
         return "No valid GPT API key provided."
@@ -77,7 +84,6 @@ def analyze_research(research_text):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {OPENAI_API_KEY}",
     }
-    # Prepare a prompt that instructs GPT to summarize concisely.
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [
@@ -106,13 +112,12 @@ def analyze_research(research_text):
     except Exception as e:
         return f"GPT analysis error: {str(e)}"
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 # Function: generate_topic(context)
-# =============================================================================
+# -----------------------------------------------------------------------------
 def generate_topic(context):
     """
-    Uses the OpenAI GPT API to generate a concise research topic (3-5 words)
-    based on the provided context.
+    Generates a concise research topic (3-5 words) based on the provided context using the OpenAI GPT API.
     """
     if not OPENAI_API_KEY:
         return "AI Research"
@@ -150,16 +155,18 @@ def generate_topic(context):
         logger.error(f"Error generating topic: {str(e)}")
         return "AI Research"
 
-# =============================================================================
-# For standalone testing of the module
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Standalone Testing
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     test_context = "Aurora has been learning continuously and storing various research data."
     topic = generate_topic(test_context)
     print("Generated Topic:", topic)
+    
     research_result = research(topic)
-    print("Research Result:")
+    print("\nResearch Result:")
     print(research_result)
+    
     analysis = analyze_research(research_result)
     print("\nGPT Analysis:")
     print(analysis)
