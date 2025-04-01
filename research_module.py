@@ -11,11 +11,11 @@ Before running, set the following environment variables:
   - GOOGLE_API_KEY: Your Google API key.
   - CUSTOM_SEARCH_ENGINE_ID: Your Custom Search Engine ID.
   - OPENAI_API_KEY: Your OpenAI API key.
-
-Example usage:
+  
+Usage:
     export GOOGLE_API_KEY="your_google_api_key_here"
     export CUSTOM_SEARCH_ENGINE_ID="your_custom_search_engine_id_here"
-    export OPENAI_API_KEY="sk-your_valid_openai_key_here"
+    export OPENAI_API_KEY="your_openai_api_key_here"
     python3 research_module.py
 """
 
@@ -23,7 +23,7 @@ import os
 import requests
 import logging
 
-# Set up logging for full debug information.
+# Set up detailed logging.
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s]: %(message)s',
@@ -36,7 +36,6 @@ GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Verify that all required credentials are provided.
 if not GOOGLE_API_KEY:
     logger.error("Google API key not provided in environment variable GOOGLE_API_KEY.")
 if not CUSTOM_SEARCH_ENGINE_ID:
@@ -44,11 +43,8 @@ if not CUSTOM_SEARCH_ENGINE_ID:
 if not OPENAI_API_KEY:
     logger.error("OpenAI API key not provided in environment variable OPENAI_API_KEY.")
 
-
 def generate_topic(context):
-    """
-    Generate a concise research topic using OpenAI GPT.
-    """
+    """Generate a concise research topic using the OpenAI GPT API."""
     if not OPENAI_API_KEY:
         logger.error("No valid OpenAI API key provided for topic generation.")
         return "AI Research"
@@ -84,11 +80,8 @@ def generate_topic(context):
         logger.error(f"Exception during topic generation: {e}")
         return "AI Research"
 
-
 def research(topic):
-    """
-    Uses the Google Custom Search API to perform a search for the topic.
-    """
+    """Use the Google Custom Search API to search for the given topic."""
     if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
         error_message = "Error: Missing Google API credentials."
         logger.error(error_message)
@@ -126,11 +119,8 @@ def research(topic):
     logger.info(result_text)
     return result_text
 
-
 def analyze_research(research_text):
-    """
-    Uses the OpenAI GPT API to analyze research text.
-    """
+    """Analyze the research text using the OpenAI GPT API for a concise summary."""
     if not OPENAI_API_KEY:
         logger.error("No valid OpenAI API key provided for research analysis.")
         return "No valid GPT API key provided."
@@ -144,7 +134,7 @@ def analyze_research(research_text):
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [
-            {"role": "system", "content": "You are a concise research assistant. Provide a brief summary or list key terms."},
+            {"role": "system", "content": "You are a concise research assistant. Provide a brief summary or key terms."},
             {"role": "user", "content": f"Summarize the following research result in 1-2 sentences or list 3-5 key terms:\n\n{research_text}"}
         ],
         "temperature": 0.3
@@ -166,9 +156,8 @@ def analyze_research(research_text):
         logger.error(f"GPT analysis error: {e}")
         return f"GPT analysis error: {e}"
 
-
 def main():
-    # Example context for topic generation.
+    # Use an example context for topic generation.
     context = "Latest advancements in computational research and AI."
     topic = generate_topic(context)
     research_result = research(topic)
@@ -177,7 +166,6 @@ def main():
     print("Generated Topic:", topic)
     print("\nResearch Result:\n", research_result)
     print("\nGPT Analysis:\n", analysis)
-
 
 if __name__ == "__main__":
     main()
