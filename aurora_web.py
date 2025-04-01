@@ -43,7 +43,7 @@ logger = logging.getLogger("Aurora.Web")
 # It is recommended to set these as environment variables in production.
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ")
 CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID", "auorora-1743163807274")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "sk-gxIneDKdzHY7zh6QGnjA4lQ6iwWlzm-Ho9Z3W637dBT3BlbkFJFxCDg-Nw7H_YFs-zUIcfPWyatPP_XocTbJ87Pt5lkA")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
 
 # ---------------------------------------------------------------------------
 # Module Implementations
