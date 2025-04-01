@@ -2,29 +2,25 @@
 """
 Research Module for Aurora AI
 -----------------------------
-This module performs real research using both the Google Custom Search API
-and the OpenAI GPT API. It:
-  1. Generates a concise research topic via the GPT API.
-  2. Searches that topic using the Google Custom Search API.
-  3. Analyzes the search result using GPT to produce a brief summary.
+This module performs live research using:
+  - Google Custom Search API for search results.
+  - OpenAI GPT API for generating concise research topics and summarizing the results.
 
-For testing purposes, the API keys are provided below.
-In production, set these keys as environment variables.
+For testing purposes, the API credentials are provided as defaults.
+In production, remove these defaults and load them from secure environment variables.
 
-Usage:
-    python3 research_module.py
-
-API Keys (for testing only):
-  GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"
-  CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"
-  OPENAI_API_KEY = "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"
+Default Credentials (testing only):
+  GOOGLE_API_KEY: "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"
+  CUSTOM_SEARCH_ENGINE_ID: "67834a4cc93244872"
+  OPENAI_API_KEY: "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"
 """
 
 import os
 import requests
 import logging
+import json
 
-# Setup detailed logging.
+# Set up detailed logging.
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s]: %(message)s',
@@ -32,11 +28,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("Aurora.Research")
 
-# For testing, we use the following keys. In production, use environment variables.
+# Load credentials from environment variables or use defaults for testing.
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ")
 CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID", "67834a4cc93244872")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
 
+# Check that credentials are present.
 if not GOOGLE_API_KEY:
     logger.error("Google API key not provided.")
 if not CUSTOM_SEARCH_ENGINE_ID:
@@ -62,11 +59,10 @@ def generate_topic(context):
         "model": "gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "You are a creative AI that generates concise research topics."},
-            {"role": "user", "content": f"Based on the following context, generate a short research topic (3-5 words): {context}"}
+            {"role": "user", "content": f"Based on this context, generate a short research topic (3-5 words): {context}"}
         ],
         "temperature": 0.3
     }
-    
     try:
         response = requests.post(url, headers=headers, json=data, timeout=10)
         logger.debug(f"GPT API Response status code: {response.status_code}")
@@ -101,7 +97,6 @@ def research(topic):
         "num": 1,
     }
     logger.debug(f"Request parameters: {params}")
-    
     try:
         response = requests.get(url, params=params, timeout=5)
         logger.debug(f"Google API Response status code: {response.status_code}")
@@ -146,7 +141,6 @@ def analyze_research(research_text):
         ],
         "temperature": 0.3
     }
-    
     try:
         response = requests.post(url, headers=headers, json=data, timeout=10)
         logger.debug(f"GPT API Response status code: {response.status_code}")
@@ -164,15 +158,21 @@ def analyze_research(research_text):
         return f"GPT analysis error: {e}"
 
 def main():
-    # Use an example context for topic generation.
-    context = "Latest advancements in computational research and artificial intelligence."
+    # Define context for topic generation.
+    context = "Latest advancements in computational research, artificial intelligence, and science."
+    
     topic = generate_topic(context)
     research_result = research(topic)
     analysis = analyze_research(research_result)
     
-    print("Generated Topic:", topic)
-    print("\nResearch Result:\n", research_result)
-    print("\nGPT Analysis:\n", analysis)
+    # Assemble the output in JSON format.
+    output = {
+        topic: {
+            "research": research_result,
+            "analysis": analysis
+        }
+    }
+    print(json.dumps(output, indent=2))
 
 if __name__ == "__main__":
     main()
