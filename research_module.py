@@ -2,28 +2,29 @@
 """
 Research Module for Aurora AI
 -----------------------------
-This module performs the following tasks:
-  1. Generates a concise research topic using the OpenAI GPT API.
-  2. Uses the Google Custom Search API to search for that topic.
-  3. Analyzes the research result using the OpenAI GPT API.
+This module performs real research using both the Google Custom Search API
+and the OpenAI GPT API. It:
+  1. Generates a concise research topic via the GPT API.
+  2. Searches that topic using the Google Custom Search API.
+  3. Analyzes the search result using GPT to produce a brief summary.
 
-Before running, set the following environment variables:
-  - GOOGLE_API_KEY: Your Google API key.
-  - CUSTOM_SEARCH_ENGINE_ID: Your Custom Search Engine ID.
-  - OPENAI_API_KEY: Your OpenAI API key.
-  
+For testing purposes, the API keys are provided below.
+In production, set these keys as environment variables.
+
 Usage:
-    export GOOGLE_API_KEY="your_google_api_key_here"
-    export CUSTOM_SEARCH_ENGINE_ID="your_custom_search_engine_id_here"
-    export OPENAI_API_KEY="your_openai_api_key_here"
     python3 research_module.py
+
+API Keys (for testing only):
+  GOOGLE_API_KEY = "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ"
+  CUSTOM_SEARCH_ENGINE_ID = "67834a4cc93244872"
+  OPENAI_API_KEY = "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"
 """
 
 import os
 import requests
 import logging
 
-# Set up detailed logging.
+# Setup detailed logging.
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s]: %(message)s',
@@ -31,20 +32,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger("Aurora.Research")
 
-# Retrieve API keys from environment variables.
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# For testing, we use the following keys. In production, use environment variables.
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyDkgGTBEARi2p183v1craE4ohVydrJ0vjQ")
+CUSTOM_SEARCH_ENGINE_ID = os.environ.get("CUSTOM_SEARCH_ENGINE_ID", "67834a4cc93244872")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "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")
 
 if not GOOGLE_API_KEY:
-    logger.error("Google API key not provided in environment variable GOOGLE_API_KEY.")
+    logger.error("Google API key not provided.")
 if not CUSTOM_SEARCH_ENGINE_ID:
-    logger.error("Custom Search Engine ID not provided in environment variable CUSTOM_SEARCH_ENGINE_ID.")
+    logger.error("Custom Search Engine ID not provided.")
 if not OPENAI_API_KEY:
-    logger.error("OpenAI API key not provided in environment variable OPENAI_API_KEY.")
+    logger.error("OpenAI API key not provided.")
 
 def generate_topic(context):
-    """Generate a concise research topic using the OpenAI GPT API."""
+    """
+    Generate a concise research topic using the OpenAI GPT API.
+    """
     if not OPENAI_API_KEY:
         logger.error("No valid OpenAI API key provided for topic generation.")
         return "AI Research"
@@ -81,12 +84,14 @@ def generate_topic(context):
         return "AI Research"
 
 def research(topic):
-    """Use the Google Custom Search API to search for the given topic."""
+    """
+    Search for the given topic using the Google Custom Search API.
+    """
     if not GOOGLE_API_KEY or not CUSTOM_SEARCH_ENGINE_ID:
         error_message = "Error: Missing Google API credentials."
         logger.error(error_message)
         return error_message
-    
+
     logger.info(f"Researching topic with Google Custom Search: {topic}")
     url = "https://www.googleapis.com/customsearch/v1"
     params = {
@@ -120,7 +125,9 @@ def research(topic):
     return result_text
 
 def analyze_research(research_text):
-    """Analyze the research text using the OpenAI GPT API for a concise summary."""
+    """
+    Analyze the research text using the OpenAI GPT API to produce a concise summary.
+    """
     if not OPENAI_API_KEY:
         logger.error("No valid OpenAI API key provided for research analysis.")
         return "No valid GPT API key provided."
@@ -134,7 +141,7 @@ def analyze_research(research_text):
     data = {
         "model": "gpt-3.5-turbo",
         "messages": [
-            {"role": "system", "content": "You are a concise research assistant. Provide a brief summary or key terms."},
+            {"role": "system", "content": "You are a concise research assistant. Provide a brief summary or list key terms."},
             {"role": "user", "content": f"Summarize the following research result in 1-2 sentences or list 3-5 key terms:\n\n{research_text}"}
         ],
         "temperature": 0.3
@@ -158,7 +165,7 @@ def analyze_research(research_text):
 
 def main():
     # Use an example context for topic generation.
-    context = "Latest advancements in computational research and AI."
+    context = "Latest advancements in computational research and artificial intelligence."
     topic = generate_topic(context)
     research_result = research(topic)
     analysis = analyze_research(research_result)
